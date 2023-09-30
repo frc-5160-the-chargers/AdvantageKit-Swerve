@@ -1,0 +1,61 @@
+{
+  "NTProvider": {
+    "types": {
+      "/FMSInfo": "FMSInfo",
+      "/SmartDashboard/Field": "Field2d"
+    },
+    "windows": {
+      "/SmartDashboard/Field": {
+        "window": {
+          "visible": true
+        }
+      }
+    }
+  },
+  "NetworkTables": {
+    "transitory": {
+      "AdvantageKit": {
+        "BottomLeftSwerveModule": {
+          "open": true
+        },
+        "BottomRightSwerveModule": {
+          "open": true
+        },
+        "RealMetadata": {
+          "open": true
+        },
+        "RealOutputs": {
+          "ActiveCommands": {
+            "open": true
+          },
+          "BottomLeftSwerveModule": {
+            "open": true
+          },
+          "BottomRightSwerveModule": {
+            "open": true
+          },
+          "TopLeftSwerveModule": {
+            "open": true
+          },
+          "TopRightSwerveModule": {
+            "open": true
+          },
+          "open": true
+        },
+        "TopLeftSwerveModule": {
+          "open": true
+        },
+        "TopRightSwerveModule": {
+          "open": true
+        },
+        "open": true
+      },
+      "SmartDashboard": {
+        "Field": {
+          "open": true
+        },
+        "open": true
+      }
+    }
+  }
+}
