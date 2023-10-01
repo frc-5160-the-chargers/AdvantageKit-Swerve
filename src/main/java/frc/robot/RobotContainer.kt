@@ -30,7 +30,6 @@ import frc.chargers.hardware.swerve.sparkMaxDriveMotors
 import frc.chargers.hardware.swerve.sparkMaxTurnMotors
 import frc.chargers.hardware.swerve.swerveCANcoders
 import frc.chargers.wpilibextensions.geometry.AngularTrapezoidProfile
-import frc.chargers.wpilibextensions.kinematics.swerve.ModuleSpeeds
 import org.littletonrobotics.junction.Logger
 
 /**
@@ -46,18 +45,23 @@ object RobotContainer {
     val field = Field2d()
 
 
-    /*
+
+
     private val turnC: TurnPID = TurnPID.Profiled(
-        PIDConstants(14.0,0.0,0.1),
-        AngularTrapezoidProfile.Constraints(AngularVelocity(6.0),AngularAcceleration(3.5)),
+        PIDConstants(20.0,0.0,0.0),
+        AngularTrapezoidProfile.Constraints(AngularVelocity(6.0),AngularAcceleration(6.0)),
         //AngularMotorFF(0.0.volts,1.0,0.0,angleUnit = radians)
     )
-     */
 
 
+
+
+
+    /*
     private val turnC: TurnPID = TurnPID.Basic(
         PIDConstants(20.0,0.0,0.1)
     )
+     */
 
     private val velC: VelocityPID = VelocityPID(
         pidConstants = PIDConstants(2.5,0.0,0.0),
@@ -83,7 +87,8 @@ object RobotContainer {
                     topLeft = ChargerCANcoder(0),
                     topRight = ChargerCANcoder(0),
                     bottomLeft = ChargerCANcoder(0),
-                    bottomRight = ChargerCANcoder(0)
+                    bottomRight = ChargerCANcoder(0),
+                    true
                 ),
                 driveMotors = sparkMaxDriveMotors(
                     topLeft = neoSparkMax(0),
@@ -151,11 +156,7 @@ object RobotContainer {
     private fun configureBindings() {
         drivetrain.setDefaultRunCommand{
             //swerveDrive(controller.swerveOutput)
-            swerveDrive(0.5,0.2,0.3)
-            //topLeft.io.setTurnVoltage(2.0.volts)
-            //topRight.io.setTurnVoltage(2.0.volts)
-            //bottomLeft.io.setTurnVoltage(2.0.volts)
-            //bottomRight.io.setTurnVoltage(2.0.volts)
+            swerveDrive(0.0,0.0,0.5)
         }
     }
 

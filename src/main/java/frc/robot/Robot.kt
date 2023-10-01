@@ -10,9 +10,10 @@ import edu.wpi.first.wpilibj.livewindow.LiveWindow
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import frc.chargers.advantagekitextensions.NTSafePublisher
+import frc.chargers.advantagekitextensions.logChargerLibMetadata
 import frc.chargers.advantagekitextensions.logGitDirty
 import frc.chargers.advantagekitextensions.startCommandLog
-import org.ejml.EjmlVersion.*
+import frc.robot.BuildConstants.*
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
 import org.littletonrobotics.junction.Logger
@@ -51,6 +52,8 @@ object Robot : LoggedRobot() {
             recordMetadata("GitBranch", GIT_BRANCH)
             // custom extension function which replaces a when branch for logging git dirty
             logGitDirty(DIRTY)
+            // custom extension function that logs ChargerLib's BUILD_DATE, GIT_SHA, GIT_BRANCH and GIT_DIRTY
+            logChargerLibMetadata()
 
             // real robot
             if (RobotBase.isReal()){
@@ -75,7 +78,7 @@ object Robot : LoggedRobot() {
 
         LiveWindow.disableAllTelemetry()
 
-        // inits robotContainer
+        // inits robotContainer; objects are only initialized on first access
         RobotContainer
 
         // custom extension function in chargerlib
