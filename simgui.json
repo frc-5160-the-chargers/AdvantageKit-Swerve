@@ -15,10 +15,10 @@
   "NetworkTables": {
     "transitory": {
       "AdvantageKit": {
-        "BottomLeftSwerveModule": {
-          "open": true
-        },
-        "BottomRightSwerveModule": {
+        "Drivetrain": {
+          "BottomLeftSwerveModule": {
+            "open": true
+          },
           "open": true
         },
         "RealMetadata": {
@@ -34,18 +34,15 @@
           "BottomRightSwerveModule": {
             "open": true
           },
+          "Drivetrain": {
+            "open": true
+          },
           "TopLeftSwerveModule": {
             "open": true
           },
           "TopRightSwerveModule": {
             "open": true
           },
-          "open": true
-        },
-        "TopLeftSwerveModule": {
-          "open": true
-        },
-        "TopRightSwerveModule": {
           "open": true
         },
         "open": true

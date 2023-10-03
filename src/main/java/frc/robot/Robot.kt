@@ -4,7 +4,6 @@
 package frc.robot
 
 
-import com.batterystaple.kmeasure.units.meters
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.livewindow.LiveWindow
 import edu.wpi.first.wpilibj2.command.Command
@@ -99,11 +98,12 @@ object Robot : LoggedRobot() {
         // and running subsystem periodic() methods.  This must be called from the robot's periodic
         // block in order for anything in the Command-based framework to work.
         CommandScheduler.getInstance().run()
-        RobotContainer.field.robotPose = RobotContainer.drivetrain.robotPose.inUnit(meters)
     }
 
     /** This function is called once each time the robot enters Disabled mode.  */
-    override fun disabledInit() {}
+    override fun disabledInit() {
+        CommandScheduler.getInstance().cancelAll()
+    }
     override fun disabledPeriodic() {}
 
     /** This autonomous runs the autonomous command selected by your [RobotContainer] class.  */

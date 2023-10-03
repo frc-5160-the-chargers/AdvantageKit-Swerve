@@ -7,12 +7,9 @@ import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.*
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.RobotBase
-import edu.wpi.first.wpilibj.smartdashboard.Field2d
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.button.Trigger
-import frc.chargers.commands.DoNothing
-import frc.chargers.commands.setDefaultRunCommand
+import frc.chargers.commands.*
 import frc.chargers.constants.MK4i
 import frc.chargers.controls.feedforward.AngularMotorFF
 import frc.chargers.controls.pid.PIDConstants
@@ -30,7 +27,6 @@ import frc.chargers.hardware.swerve.sparkMaxDriveMotors
 import frc.chargers.hardware.swerve.sparkMaxTurnMotors
 import frc.chargers.hardware.swerve.swerveCANcoders
 import frc.chargers.wpilibextensions.geometry.AngularTrapezoidProfile
-import org.littletonrobotics.junction.Logger
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -42,7 +38,6 @@ object RobotContainer {
 
     val drivetrain: EncoderHolonomicDrivetrain
 
-    val field = Field2d()
 
 
 
@@ -50,7 +45,6 @@ object RobotContainer {
     private val turnC: TurnPID = TurnPID.Profiled(
         PIDConstants(20.0,0.0,0.0),
         AngularTrapezoidProfile.Constraints(AngularVelocity(6.0),AngularAcceleration(6.0)),
-        //AngularMotorFF(0.0.volts,1.0,0.0,angleUnit = radians)
     )
 
 
@@ -88,7 +82,7 @@ object RobotContainer {
                     topRight = ChargerCANcoder(0),
                     bottomLeft = ChargerCANcoder(0),
                     bottomRight = ChargerCANcoder(0),
-                    true
+                    useAbsoluteSensor = true
                 ),
                 driveMotors = sparkMaxDriveMotors(
                     topLeft = neoSparkMax(0),
@@ -123,29 +117,7 @@ object RobotContainer {
             )
         }
 
-        Logger.getInstance().recordOutput("TopLeftSwerveModule/postOptimizeDesiredDirection", 0.0)
-        Logger.getInstance().recordOutput("TopRightSwerveModule/postOptimizeDesiredDirection", 0.0)
-        Logger.getInstance().recordOutput("BottomLeftSwerveModule/postOptimizeDesiredDirection", 0.0)
-        Logger.getInstance().recordOutput("BottomRightSwerveModule/postOptimizeDesiredDirection", 0.0)
-
-        Logger.getInstance().recordOutput("TopLeftSwerveModule/initialDesiredDirection", 0.0)
-        Logger.getInstance().recordOutput("TopRightSwerveModule/initialDesiredDirection", 0.0)
-        Logger.getInstance().recordOutput("BottomLeftSwerveModule/initialDesiredDirection", 0.0)
-        Logger.getInstance().recordOutput("BottomRightSwerveModule/initialDesiredDirection", 0.0)
-
-        Logger.getInstance().recordOutput("TopLeftSwerveModule/angleDelta", 0.0)
-        Logger.getInstance().recordOutput("TopRightSwerveModule/angleDelta", 0.0)
-        Logger.getInstance().recordOutput("BottomLeftSwerveModule/angleDelta", 0.0)
-        Logger.getInstance().recordOutput("BottomRightSwerveModule/angleDelta", 0.0)
-        
-        
-
-        // println(drivetrain.maxRotationalVelocity.inUnit(degrees/ seconds))
-
-
         configureBindings()
-
-        SmartDashboard.putData("Field",field)
     }
 
     /**
@@ -154,12 +126,21 @@ object RobotContainer {
      * predicate, or via the named factories in [ ]'s subclasses for [ ]/[ PS4][edu.wpi.first.wpilibj2.command.button.CommandPS4Controller] controllers or [Flight][edu.wpi.first.wpilibj2.command.button.CommandJoystick].
      */
     private fun configureBindings() {
-        drivetrain.setDefaultRunCommand{
-            //swerveDrive(controller.swerveOutput)
-            swerveDrive(0.0,0.0,0.5)
+        drivetrain.defaultCommand = RunCommand(drivetrain){
+            drivetrain.swerveDrive(0.5,0.0,0.0)
+        }.finallyDo{
+            drivetrain.stop()
         }
     }
 
     val autonomousCommand: Command
-        get() = DoNothing()
+        get() = buildCommand{
+            loopFor(3.seconds,drivetrain){
+                drivetrain.swerveDrive(0.5,0.0,0.0)
+            }
+
+            runOnce(drivetrain){
+                drivetrain.stop()
+            }
+        }
 }
