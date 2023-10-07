@@ -5,11 +5,17 @@ package frc.robot
 
 import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.*
+import com.pathplanner.lib.PathPlannerTrajectory
+import com.pathplanner.lib.commands.PPSwerveControllerCommand
+import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics
+import edu.wpi.first.math.kinematics.SwerveDriveOdometry
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import frc.chargers.commands.*
+import frc.chargers.commands.drivetrainCommands.followPath
 import frc.chargers.constants.MK4i
 import frc.chargers.controls.feedforward.AngularMotorFF
 import frc.chargers.controls.pid.PIDConstants
@@ -21,12 +27,15 @@ import frc.chargers.hardware.sensors.gyroscopes.HeadingProvider
 import frc.chargers.hardware.subsystems.drivetrain.EncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystems.drivetrain.realEncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystems.drivetrain.simEncoderHolonomicDrivetrain
-import frc.chargers.hardware.swerve.control.TurnPID
-import frc.chargers.hardware.swerve.control.VelocityPID
+import frc.chargers.hardware.swerve.control.SwerveAngleControl
+import frc.chargers.hardware.swerve.control.SwerveSpeedControl
 import frc.chargers.hardware.swerve.sparkMaxDriveMotors
 import frc.chargers.hardware.swerve.sparkMaxTurnMotors
 import frc.chargers.hardware.swerve.swerveCANcoders
+import frc.chargers.utils.PathConstraints
+import frc.chargers.utils.a
 import frc.chargers.wpilibextensions.geometry.AngularTrapezoidProfile
+import org.littletonrobotics.junction.Logger
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -42,24 +51,32 @@ object RobotContainer {
 
 
 
-    private val turnC: TurnPID = TurnPID.Profiled(
+    /*
+    private val turnC: SwerveAngleControl = SwerveAngleControl.ProfiledPID(
         PIDConstants(20.0,0.0,0.0),
         AngularTrapezoidProfile.Constraints(AngularVelocity(6.0),AngularAcceleration(6.0)),
     )
-
-
-
-
-
-    /*
-    private val turnC: TurnPID = TurnPID.Basic(
-        PIDConstants(20.0,0.0,0.1)
-    )
      */
 
-    private val velC: VelocityPID = VelocityPID(
-        pidConstants = PIDConstants(2.5,0.0,0.0),
-        ff = AngularMotorFF(0.1.volts,0.0,0.0, angleUnit = radians)
+
+
+
+
+
+
+    private val turnC: SwerveAngleControl = SwerveAngleControl.PID(
+        PIDConstants(40.0,0.0,0.1)
+    )
+
+    private val emptyGyro = object: HeadingProvider{
+        override val heading: Angle
+            get() = Angle(0.0)
+    }
+
+
+    private val velC: SwerveSpeedControl = SwerveSpeedControl(
+        pidConstants = PIDConstants(0.1,0.0,0.0),
+        ff = AngularMotorFF(0.11697.volts,0.133420,0.0, angleUnit = radians)
     )
 
     private val controller = SwerveDriveController.fromDefaultBindings(0)
@@ -93,9 +110,10 @@ object RobotContainer {
                 turnControl = turnC,
                 velocityControl = velC,
                 NavX(),
-                gearRatio = MK4i.GEAR_RATIO_L2,
-                trackWidth = 5.meters,
-                wheelBase = 5.meters,
+                driveGearRatio = MK4i.GEAR_RATIO_L2,
+                turnGearRatio = MK4i.TURN_GEAR_RATIO,
+                trackWidth = 29.inches,
+                wheelBase = 29.inches,
                 wheelDiameter = MK4i.WHEEL_DIAMETER,
                 fieldRelativeDrive = false
             )
@@ -105,15 +123,12 @@ object RobotContainer {
                 driveGearbox = DCMotor.getNEO(1),
                 turnGearRatio = MK4i.TURN_GEAR_RATIO,
                 driveGearRatio = MK4i.GEAR_RATIO_L2,
-                gyro = object: HeadingProvider {
-                    override val heading: Angle = Angle(0.0)
-                },
                 turnControl = turnC,
                 velocityControl = velC,
-                trackWidth = 5.meters,
-                wheelBase = 5.meters,
+                trackWidth = 29.inches,
+                wheelBase = 29.inches,
                 wheelDiameter = MK4i.WHEEL_DIAMETER,
-                fieldRelativeDrive = false
+                fieldRelativeDrive = true
             )
         }
 
@@ -127,19 +142,95 @@ object RobotContainer {
      */
     private fun configureBindings() {
         drivetrain.defaultCommand = RunCommand(drivetrain){
-            drivetrain.swerveDrive(0.5,0.0,0.0)
+            /*
+            drivetrain.apply{
+                topLeft.setDirection(45.degrees)
+                topRight.setDirection(45.degrees)
+                bottomLeft.setDirection(45.degrees)
+                bottomRight.setDirection(45.degrees)
+                topLeft.setPower(0.5)
+                topRight.setPower(0.5)
+                bottomLeft.setPower(0.5)
+                bottomRight.setPower(0.5)
+            }
+             */
+            drivetrain.swerveDrive(0.0,0.5,0.2)
         }.finallyDo{
             drivetrain.stop()
         }
     }
 
+    val odoTestCommand: Command = buildCommand{
+        val kinematics: SwerveDriveKinematics = drivetrain.kinematics
+    }
+
     val autonomousCommand: Command
         get() = buildCommand{
+
+            /*
             loopFor(3.seconds,drivetrain){
-                drivetrain.swerveDrive(0.5,0.0,0.0)
+                drivetrain.swerveDrive(0.5,0.0,0.2)
+            }
+             */
+
+            /*
+            loopFor(5.seconds,drivetrain){
+                drivetrain.topLeft.apply{
+                    setDirection(45.degrees)
+                    setPower(0.5)
+                }
+                drivetrain.topRight.apply{
+                    setDirection(45.degrees)
+                    setPower(0.5)
+                }
+                drivetrain.bottomLeft.apply{
+                    setDirection(315.degrees)
+                    setPower(0.5)
+                }
+                drivetrain.bottomRight.apply{
+                    setDirection(315.degrees)
+                    setPower(0.5)
+                }
             }
 
-            runOnce(drivetrain){
+             */
+
+
+
+
+            loopFor(3.seconds,drivetrain){
+                drivetrain.velocityDrive(Velocity(0.0),Velocity(3.0),0.degrees / 1.seconds)
+            }
+
+
+
+
+
+
+
+
+
+
+            /*
+            drivetrain.followPath(
+                "path_test_2",
+                PIDConstants(0.2,0.0,0.0),
+                PIDConstants(0.1,0.0,0.0),
+                PathConstraints(Velocity(4.5),Acceleration(2.0)),
+                isFirstPath = true
+            )
+             */
+
+
+
+
+
+
+
+
+
+
+            loopForever(drivetrain){
                 drivetrain.stop()
             }
         }

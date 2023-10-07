@@ -4,6 +4,11 @@
 package frc.robot
 
 
+import com.batterystaple.kmeasure.quantities.AngularVelocity
+import com.batterystaple.kmeasure.quantities.inUnit
+import com.batterystaple.kmeasure.units.meters
+import com.batterystaple.kmeasure.units.radians
+import com.batterystaple.kmeasure.units.volts
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.livewindow.LiveWindow
 import edu.wpi.first.wpilibj2.command.Command
@@ -12,6 +17,9 @@ import frc.chargers.advantagekitextensions.NTSafePublisher
 import frc.chargers.advantagekitextensions.logChargerLibMetadata
 import frc.chargers.advantagekitextensions.logGitDirty
 import frc.chargers.advantagekitextensions.startCommandLog
+import frc.chargers.controls.feedforward.AngularMotorFF
+import frc.chargers.controls.pid.PIDConstants
+import frc.chargers.controls.pid.UnitSuperPIDController
 import frc.robot.BuildConstants.*
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
@@ -59,17 +67,14 @@ object Robot : LoggedRobot() {
                 if (Files.exists(Path.of(LOG_FOLDER))){
                     addDataReceiver(WPILOGWriter(LOG_FOLDER))
                 }
-                addDataReceiver(NTSafePublisher())
             }else if (IS_REPLAY){
                 // replay mode; sim
                 val path = LogFileUtil.findReplayLog()
                 setReplaySource(WPILOGReader(path))
                 addDataReceiver(WPILOGWriter(LogFileUtil.addPathSuffix(path, "_replayed")))
-            }else{
-                // sim mode
-                logger.addDataReceiver(NTSafePublisher())
-                // maybe add DriverStationSim? idk
             }
+
+            addDataReceiver(NTSafePublisher())
 
             // no more configuration from this point on
             start()
@@ -83,6 +88,15 @@ object Robot : LoggedRobot() {
         // custom extension function in chargerlib
         CommandScheduler.getInstance().startCommandLog()
     }
+
+    val testFF = AngularMotorFF(0.11697.volts,0.133420,0.0, angleUnit = radians)
+    val testpidcontroller = UnitSuperPIDController(
+        PIDConstants(0.0,0.0,0.0),
+        {AngularVelocity(0.0)},
+        -12.volts..12.volts,
+        target = AngularVelocity(0.0),
+        feedforward = testFF
+    )
 
     /**
      * This function is called every 20 ms, no matter the mode. Use this for items like diagnostics
@@ -98,6 +112,9 @@ object Robot : LoggedRobot() {
         // and running subsystem periodic() methods.  This must be called from the robot's periodic
         // block in order for anything in the Command-based framework to work.
         CommandScheduler.getInstance().run()
+        testpidcontroller.target = AngularVelocity(5.0)
+        Logger.getInstance().recordOutput("Drivetrain(swerve)/DistanceDrivenMeters",RobotContainer.drivetrain.distanceTraveled.inUnit(meters))
+        Logger.getInstance().recordOutput("Test FF output", testpidcontroller.calculateOutput().inUnit(volts))
     }
 
     /** This function is called once each time the robot enters Disabled mode.  */

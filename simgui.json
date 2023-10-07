@@ -21,6 +21,24 @@
           },
           "open": true
         },
+        "Drivetrain(Swerve)": {
+          "BottomLeftSwerveModule": {
+            "open": true
+          },
+          "BottomRightSwerveModule": {
+            "open": true
+          },
+          "GyroData": {
+            "open": true
+          },
+          "TopLeftSwerveModule": {
+            "open": true
+          },
+          "TopRightSwerveModule": {
+            "open": true
+          },
+          "open": true
+        },
         "RealMetadata": {
           "open": true
         },
@@ -35,6 +53,24 @@
             "open": true
           },
           "Drivetrain": {
+            "open": true
+          },
+          "Drivetrain(Swerve)": {
+            "BottomLeftSwerveModule": {
+              "open": true
+            },
+            "TopLeftSwerveModule": {
+              "open": true
+            },
+            "open": true
+          },
+          "Drivetrain(swerve)": {
+            "open": true
+          },
+          "LoggedRobot": {
+            "open": true
+          },
+          "TestOutputs": {
             "open": true
           },
           "TopLeftSwerveModule": {
