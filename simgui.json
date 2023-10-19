@@ -31,10 +31,24 @@
           "GyroData": {
             "open": true
           },
+          "HeadingData": {
+            "open": true
+          },
           "TopLeftSwerveModule": {
             "open": true
           },
           "TopRightSwerveModule": {
+            "open": true
+          }
+        },
+        "Generic IMU": {
+          "Accelerometer": {
+            "open": true
+          },
+          "Gyroscope": {
+            "open": true
+          },
+          "Speedometer": {
             "open": true
           },
           "open": true
