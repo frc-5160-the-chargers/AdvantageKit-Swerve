@@ -5,7 +5,6 @@ package frc.robot
 
 import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.*
-import edu.wpi.first.math.kinematics.*
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
 import frc.chargers.advantagekitextensions.loggedwrappers.LoggedIMU
@@ -48,24 +47,28 @@ object RobotContainer {
     /** The container for the robot. Contains subsystems, OI devices, and commands.  */
     init {
 
-
-        drivetrain.defaultCommand = RunCommand(drivetrain){
-
-            with(gyro as HeadingProvider){
-                drivetrain.swerveDrive(0.5,0.0,-0.2)
+        /*
+        loopForever(drivetrain){
+                with(gyro as HeadingProvider){
+                    drivetrain.swerveDrive(0.5,0.0,-0.2)
+                }
             }
+         */
 
-        }.finallyDo{
-            drivetrain.stop()
-        }.beforeStarting(
 
-            InstantCommand{
+        drivetrain.defaultCommand = buildCommand{
+            runOnce(drivetrain){
                 if (RobotBase.isSimulation()){
                     poseEstimator.resetPose(UnitPose2d())
                 }
             }
 
-        )
+            loopForever(drivetrain){
+                with(gyro as HeadingProvider){
+                    drivetrain.swerveDrive(0.5,0.0,0.0)
+                }
+            }
+        }.finallyDo{ drivetrain.stop() }
 
 
 

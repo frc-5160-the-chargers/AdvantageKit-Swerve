@@ -39,7 +39,8 @@
           },
           "TopRightSwerveModule": {
             "open": true
-          }
+          },
+          "open": true
         },
         "Generic IMU": {
           "Accelerometer": {

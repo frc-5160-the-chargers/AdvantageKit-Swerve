@@ -9,18 +9,16 @@ import frc.chargers.hardware.sensors.encoders.absolute.ChargerCANcoder
 import frc.chargers.hardware.subsystems.drivetrain.EncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystems.drivetrain.realEncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystems.drivetrain.simEncoderHolonomicDrivetrain
-import frc.chargers.hardware.swerve.sparkMaxDriveMotors
-import frc.chargers.hardware.swerve.sparkMaxTurnMotors
+import frc.chargers.hardware.swerve.sparkMaxSwerveMotors
 import frc.chargers.hardware.swerve.swerveCANcoders
 import frc.robot.DriveConstants
 
 
 fun getDrivetrain(): EncoderHolonomicDrivetrain{
 
-
     if (RobotBase.isReal()){
         return realEncoderHolonomicDrivetrain(
-            turnMotors = sparkMaxTurnMotors(
+            turnMotors = sparkMaxSwerveMotors(
                 topLeft = neoSparkMax(0),
                 topRight = neoSparkMax(1),
                 bottomLeft = neoSparkMax(0),
@@ -33,14 +31,13 @@ fun getDrivetrain(): EncoderHolonomicDrivetrain{
                 bottomRight = ChargerCANcoder(0),
                 useAbsoluteSensor = true
             ),
-            driveMotors = sparkMaxDriveMotors(
+            driveMotors = sparkMaxSwerveMotors(
                 topLeft = neoSparkMax(0),
                 topRight = neoSparkMax(1),
                 bottomLeft = neoSparkMax(0),
                 bottomRight = neoSparkMax(0)
             ),
-            turnControl = DriveConstants.turnControl,
-            velocityControl = DriveConstants.velocityControl,
+            controlScheme = DriveConstants.realControlScheme,
             driveGearRatio = MK4i.GEAR_RATIO_L2,
             turnGearRatio = MK4i.TURN_GEAR_RATIO,
             trackWidth = DriveConstants.trackWidth,
@@ -53,8 +50,7 @@ fun getDrivetrain(): EncoderHolonomicDrivetrain{
             driveGearbox = DCMotor.getNEO(1),
             turnGearRatio = MK4i.TURN_GEAR_RATIO,
             driveGearRatio = MK4i.GEAR_RATIO_L2,
-            turnControl = DriveConstants.turnControl,
-            velocityControl = DriveConstants.velocityControl,
+            controlScheme = DriveConstants.simControlScheme,
             trackWidth = DriveConstants.trackWidth,
             wheelBase = DriveConstants.wheelBase,
             wheelDiameter = MK4i.WHEEL_DIAMETER
