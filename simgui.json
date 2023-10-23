@@ -59,6 +59,12 @@
         },
         "RealOutputs": {
           "ActiveCommands": {
+            "Generic BuildCommand-subcommands": {
+              "open": true
+            },
+            "Subcommands Of: DrivetrainDefaultCommand": {
+              "open": true
+            },
             "open": true
           },
           "BottomLeftSwerveModule": {

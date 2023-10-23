@@ -5,18 +5,13 @@ package frc.robot
 
 import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.*
-import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
-import frc.chargers.advantagekitextensions.loggedwrappers.LoggedIMU
 import frc.chargers.commands.*
 import frc.chargers.hardware.inputdevices.SwerveDriveController
-import frc.chargers.hardware.sensors.IMUSim
-import frc.chargers.hardware.sensors.NavX
 import frc.chargers.hardware.sensors.gyroscopes.HeadingProvider
-import frc.chargers.hardware.subsystems.posemonitors.SwervePoseMonitor
-import frc.chargers.wpilibextensions.geometry.UnitPose2d
-import frc.chargers.wpilibextensions.kinematics.swerve.ModuleStateGroup
-import frc.robot.subsystems.getDrivetrain
+import frc.robot.subsystems.Drivetrain
+import frc.robot.subsystems.Gyro
+import frc.robot.subsystems.PoseEstimator
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -28,15 +23,6 @@ object RobotContainer {
 
 
 
-    val drivetrain = getDrivetrain()
-    val poseEstimator = SwervePoseMonitor(drivetrain)
-    val gyro = LoggedIMU(
-        if (RobotBase.isReal()){
-            NavX()
-        }else{
-            IMUSim(poseEstimator)
-        }
-    )
 
 
 
@@ -48,27 +34,43 @@ object RobotContainer {
     init {
 
         /*
-        loopForever(drivetrain){
+        loopForever(Drivetrain){
                 with(gyro as HeadingProvider){
-                    drivetrain.swerveDrive(0.5,0.0,-0.2)
+                    Drivetrain.swerveDrive(0.5,0.0,-0.2)
                 }
             }
          */
 
+        Drivetrain
+        PoseEstimator
+        Gyro
 
-        drivetrain.defaultCommand = buildCommand{
-            runOnce(drivetrain){
+
+        Drivetrain.defaultCommand = buildCommand(
+            Drivetrain,
+            name = "DrivetrainDefaultCommand",
+            logIndividualCommands = true
+        ){
+
+            /*
+            runOnce{
                 if (RobotBase.isSimulation()){
-                    poseEstimator.resetPose(UnitPose2d())
+                    PoseEstimator.resetPose(UnitPose2d())
+
                 }
             }
 
-            loopForever(drivetrain){
-                with(gyro as HeadingProvider){
-                    drivetrain.swerveDrive(0.5,0.0,0.0)
+             */
+
+
+            loopForever{
+                with(Gyro as HeadingProvider){
+                    Drivetrain.swerveDrive(0.5,0.0,0.2)
                 }
             }
-        }.finallyDo{ drivetrain.stop() }
+
+
+        }.finallyDo{ Drivetrain.stop() }
 
 
 
@@ -80,34 +82,20 @@ object RobotContainer {
 
 
     val autonomousCommand: Command
-        get() = buildCommand{
+        get() = buildCommand(
+            name = "Autonomous test command",
+            logIndividualCommands = true
+        ){
 
-
-
-            loopFor(3.seconds,drivetrain){
-                drivetrain.topLeft.setDirectionalPower(0.5,45.degrees)
-                drivetrain.topRight.setDirectionalPower(0.5,45.degrees)
-                drivetrain.bottomLeft.setDirectionalPower(0.5,45.degrees)
-                drivetrain.bottomRight.setDirectionalPower(0.5,45.degrees)
+            loopFor(3.seconds,Drivetrain){
+                with(Gyro){
+                    Drivetrain.velocityDrive(2.0.meters / 1.seconds, Velocity(0.0), 0.degrees/1.seconds)
+                }
             }
 
-
-
-            loopFor(3.seconds,drivetrain){
-
-                drivetrain.currentModuleStates = ModuleStateGroup(
-                    Velocity(2.0),Velocity(2.0),Velocity(2.0),Velocity(2.0),
-                    45.degrees,45.degrees,45.degrees,45.degrees
-                )
-                /*
-                Drivetrain.topLeft.setDirectionalVelocity(AngularVelocity(0.5),45.degrees)
-                Drivetrain.topRight.setDirectionalVelocity(AngularVelocity(0.5),45.degrees)
-                Drivetrain.bottomLeft.setDirectionalVelocity(AngularVelocity(0.5),45.degrees)
-                Drivetrain.bottomRight.setDirectionalVelocity(AngularVelocity(0.5),45.degrees)
-
-                 */
+            loopForever(Drivetrain){
+                Drivetrain.stop()
             }
-        }.finallyDo{
-            drivetrain.stop()
+
         }
 }

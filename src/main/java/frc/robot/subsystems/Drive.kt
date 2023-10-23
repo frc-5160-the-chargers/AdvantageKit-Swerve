@@ -13,11 +13,9 @@ import frc.chargers.hardware.swerve.sparkMaxSwerveMotors
 import frc.chargers.hardware.swerve.swerveCANcoders
 import frc.robot.DriveConstants
 
-
-fun getDrivetrain(): EncoderHolonomicDrivetrain{
-
+val Drivetrain: EncoderHolonomicDrivetrain by lazy{
     if (RobotBase.isReal()){
-        return realEncoderHolonomicDrivetrain(
+        realEncoderHolonomicDrivetrain(
             turnMotors = sparkMaxSwerveMotors(
                 topLeft = neoSparkMax(0),
                 topRight = neoSparkMax(1),
@@ -45,7 +43,7 @@ fun getDrivetrain(): EncoderHolonomicDrivetrain{
             wheelDiameter = MK4i.WHEEL_DIAMETER
         )
     }else{
-        return simEncoderHolonomicDrivetrain(
+        simEncoderHolonomicDrivetrain(
             turnGearbox = DCMotor.getNEO(1),
             driveGearbox = DCMotor.getNEO(1),
             turnGearRatio = MK4i.TURN_GEAR_RATIO,
