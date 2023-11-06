@@ -23,7 +23,7 @@ const val RESET_POSE_ON_STARTUP: Boolean = true
 val CONFIG = RobotConfig(
     isReplay = false,
     tuningMode = true,
-    onError = { println("Yay! OnError works!") }
+    onError = { println("An error has occurred. Normally, this will write to the crash tracker disc. ") }
 )
 
 object DriveHardware{
@@ -36,10 +36,18 @@ object DriveHardware{
 
     // TBD
     val encoders = swerveCANcoders(
-        topLeft = ChargerCANcoder(0),
-        topRight = ChargerCANcoder(0),
-        bottomLeft = ChargerCANcoder(0),
-        bottomRight = ChargerCANcoder(0),
+        topLeft = ChargerCANcoder(0){
+            magnetOffset = 0.0.degrees
+        },
+        topRight = ChargerCANcoder(0){
+            magnetOffset = 0.0.degrees
+        },
+        bottomLeft = ChargerCANcoder(0){
+            magnetOffset = 0.0.degrees
+        },
+        bottomRight = ChargerCANcoder(0){
+            magnetOffset = 0.0.degrees
+        },
         useAbsoluteSensor = true
     )
 
