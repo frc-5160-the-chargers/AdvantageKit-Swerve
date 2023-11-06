@@ -2,6 +2,16 @@
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
+      "/LiveWindow/SwervePoseMonitor": "Subsystem",
+      "/LiveWindow/Ungrouped/PIDController[1]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[2]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[3]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[4]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[5]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[6]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[7]": "PIDController",
+      "/LiveWindow/Ungrouped/PIDController[8]": "PIDController",
+      "/LiveWindow/Ungrouped/Scheduler": "Scheduler",
       "/SmartDashboard/Field": "Field2d"
     },
     "windows": {
@@ -13,8 +23,24 @@
     }
   },
   "NetworkTables": {
+    "Retained Values": {
+      "open": false
+    },
     "transitory": {
       "AdvantageKit": {
+        "DashboardInputs": {
+          "TunableValues": {
+            "Drivetrain(Swerve)": {
+              "BottomLeftSwerveModule": {
+                "Driving PID Constants": {
+                  "open": true
+                },
+                "open": true
+              },
+              "open": true
+            }
+          }
+        },
         "Drivetrain": {
           "BottomLeftSwerveModule": {
             "open": true
@@ -62,6 +88,9 @@
             "Generic BuildCommand-subcommands": {
               "open": true
             },
+            "Subcommands Of: Autonomous test command": {
+              "open": true
+            },
             "Subcommands Of: DrivetrainDefaultCommand": {
               "open": true
             },
@@ -102,11 +131,34 @@
           },
           "open": true
         },
+        "Sim IMU": {
+          "Gyroscope": {
+            "open": true
+          },
+          "Speedometer": {
+            "open": true
+          },
+          "open": true
+        },
+        "SystemStats": {
+          "open": true
+        },
         "open": true
       },
       "SmartDashboard": {
         "Field": {
           "open": true
+        },
+        "TunableValues": {
+          "Drivetrain(Swerve)": {
+            "BottomLeftSwerveModule": {
+              "Turning PID Constants": {
+                "open": true
+              },
+              "open": true
+            },
+            "open": true
+          }
         },
         "open": true
       }

@@ -3,74 +3,75 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot
 
-import com.batterystaple.kmeasure.quantities.*
-import com.batterystaple.kmeasure.units.*
+import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
 import frc.chargers.commands.*
+import frc.chargers.constants.tuning.DashboardTuner
+import frc.chargers.framework.ChargerRobotContainer
 import frc.chargers.hardware.inputdevices.SwerveDriveController
-import frc.chargers.hardware.sensors.gyroscopes.HeadingProvider
+import frc.chargers.wpilibextensions.geometry.UnitPose2d
 import frc.robot.subsystems.Drivetrain
 import frc.robot.subsystems.Gyro
-import frc.robot.subsystems.PoseEstimator
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
- * "declarative" paradigm, very little robot logic should actually be handled in the [Robot]
+ * "declarative" paradigm, very little robot logic should actually be handled in the [ROBOT]
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and trigger mappings) should be declared here.
  */
-object RobotContainer {
+object RobotContainer: ChargerRobotContainer() {
 
 
 
 
 
 
-    private val controller = SwerveDriveController.fromDefaultBindings(0)
+    private val controller = SwerveDriveController.fromDefaultBindings(
+        port = 1,
+        driveMultiplier = 1.0,
+        rotationMultiplier = -1.0,
+        turboModeMultiplierRange = 1.0..2.0,
+        precisionModeDividerRange = 1.0..4.0,
+        deadband = 0.2,
+    )
 
 
 
     /** The container for the robot. Contains subsystems, OI devices, and commands.  */
     init {
 
-        /*
-        loopForever(Drivetrain){
-                with(gyro as HeadingProvider){
-                    Drivetrain.swerveDrive(0.5,0.0,-0.2)
-                }
-            }
-         */
 
         Drivetrain
-        PoseEstimator
         Gyro
 
 
+
+        println("tuning mode: " + DashboardTuner.tuningMode)
+
+
         Drivetrain.defaultCommand = buildCommand(
-            Drivetrain,
             name = "DrivetrainDefaultCommand",
             logIndividualCommands = true
         ){
-
-            /*
-            runOnce{
-                if (RobotBase.isSimulation()){
-                    PoseEstimator.resetPose(UnitPose2d())
-
+            runOnce(Drivetrain){
+                if (RobotBase.isSimulation() && RESET_POSE_ON_STARTUP){
+                    Drivetrain.poseEstimator.resetPose(UnitPose2d())
                 }
             }
 
-             */
 
+            loopForever(Drivetrain){
+                Drivetrain.swerveDrive(controller.swerveOutput)
+            }
 
-            loopForever{
-                with(Gyro as HeadingProvider){
-                    Drivetrain.swerveDrive(0.5,0.0,0.2)
-                }
+            loopForever(Drivetrain){
+                Drivetrain.stop()
             }
 
 
         }.finallyDo{ Drivetrain.stop() }
+
+
 
 
 
@@ -81,21 +82,17 @@ object RobotContainer {
 
 
 
-    val autonomousCommand: Command
+    override val autonomousCommand: Command
         get() = buildCommand(
-            name = "Autonomous test command",
+            name = "FF drivetrain characterization",
             logIndividualCommands = true
         ){
-
-            loopFor(3.seconds,Drivetrain){
-                with(Gyro){
-                    Drivetrain.velocityDrive(2.0.meters / 1.seconds, Velocity(0.0), 0.degrees/1.seconds)
+            runOnce(Drivetrain){
+                if (RobotBase.isSimulation() && RESET_POSE_ON_STARTUP){
+                    Drivetrain.poseEstimator.resetPose(UnitPose2d())
                 }
             }
 
-            loopForever(Drivetrain){
-                Drivetrain.stop()
-            }
-
+            +Drivetrain.characterize()
         }
 }

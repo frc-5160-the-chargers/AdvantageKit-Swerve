@@ -20,7 +20,7 @@ class Main {
     companion object{
         @JvmStatic
         fun main(args: Array<String>) {
-            RobotBase.startRobot { Robot }
+            RobotBase.startRobot { ROBOT }
         }
     }
 }
