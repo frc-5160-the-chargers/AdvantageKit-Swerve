@@ -4,6 +4,7 @@
 package frc.robot
 
 import com.batterystaple.kmeasure.units.*
+import com.revrobotics.CANSparkMax
 import frc.chargers.constants.drivetrain.SwerveConstants
 import frc.chargers.controls.feedforward.AngularMotorFF
 import frc.chargers.controls.pid.PIDConstants
@@ -32,7 +33,9 @@ object DriveHardware{
         topRight = neoSparkMax(31),
         bottomLeft = neoSparkMax(22),
         bottomRight = neoSparkMax(5)
-    )
+    ){
+        idleMode = CANSparkMax.IdleMode.kBrake
+    }
 
     // TBD
     val encoders = swerveCANcoders(
@@ -65,9 +68,9 @@ val DRIVE_CONSTANTS = SwerveConstants.mk4iL2(
     wheelBase = 32.5.inches
 )
 
-val SIM_CONTROL_SCHEME = SwerveControl.PIDSecondOrder(
+val SIM_CONTROL_SCHEME = SwerveControl.PIDFirstOrder(
     turnPIDConstants = PIDConstants(23.0,0.0,0.0),
-    turnFF = AngularMotorFF(0.11.volts,0.10,0.0, angleUnit = radians),
+    //turnFF = AngularMotorFF(0.00126.volts,0.42520,0.0, angleUnit = radians),
     drivePIDConstants = PIDConstants(0.1,0.0,0.0),
     driveFF = AngularMotorFF(0.00162.volts,0.13394,0.0, angleUnit = radians),
 )
