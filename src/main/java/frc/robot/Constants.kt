@@ -39,16 +39,16 @@ object DriveHardware{
 
     // TBD
     val encoders = swerveCANcoders(
-        topLeft = ChargerCANcoder(0){
+        topLeft = ChargerCANcoder(42){
             magnetOffset = 0.0.degrees
         },
-        topRight = ChargerCANcoder(0){
+        topRight = ChargerCANcoder(43){
             magnetOffset = 0.0.degrees
         },
-        bottomLeft = ChargerCANcoder(0){
+        bottomLeft = ChargerCANcoder(44){
             magnetOffset = 0.0.degrees
         },
-        bottomRight = ChargerCANcoder(0){
+        bottomRight = ChargerCANcoder(45){
             magnetOffset = 0.0.degrees
         },
         useAbsoluteSensor = true
