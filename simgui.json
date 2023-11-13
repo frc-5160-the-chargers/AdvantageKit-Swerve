@@ -149,6 +149,9 @@
         "Field": {
           "open": true
         },
+        "PPSwerveControllerCommand": {
+          "open": true
+        },
         "TunableValues": {
           "Drivetrain(Swerve)": {
             "BottomLeftSwerveModule": {

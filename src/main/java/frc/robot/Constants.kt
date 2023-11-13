@@ -32,25 +32,17 @@ object DriveHardware{
         topLeft = neoSparkMax(29),
         topRight = neoSparkMax(31),
         bottomLeft = neoSparkMax(22),
-        bottomRight = neoSparkMax(5)
+        bottomRight = neoSparkMax(4)
     ){
         idleMode = CANSparkMax.IdleMode.kBrake
     }
 
     // TBD
     val encoders = swerveCANcoders(
-        topLeft = ChargerCANcoder(42){
-            magnetOffset = 0.0.degrees
-        },
-        topRight = ChargerCANcoder(43){
-            magnetOffset = 0.0.degrees
-        },
-        bottomLeft = ChargerCANcoder(44){
-            magnetOffset = 0.0.degrees
-        },
-        bottomRight = ChargerCANcoder(45){
-            magnetOffset = 0.0.degrees
-        },
+        topLeft = ChargerCANcoder(44){ magnetOffset = 0.0.degrees },
+        topRight = ChargerCANcoder(42){ magnetOffset = 0.0.degrees },
+        bottomLeft = ChargerCANcoder(43){ magnetOffset = 0.0.degrees },
+        bottomRight = ChargerCANcoder(45){ magnetOffset = 0.0.degrees },
         useAbsoluteSensor = true
     )
 
@@ -59,7 +51,9 @@ object DriveHardware{
         topRight = neoSparkMax(16),
         bottomLeft = neoSparkMax(30),
         bottomRight = neoSparkMax(3)
-    )
+    ){
+        idleMode = CANSparkMax.IdleMode.kBrake
+    }
 }
 
 
@@ -68,15 +62,15 @@ val DRIVE_CONSTANTS = SwerveConstants.mk4iL2(
     wheelBase = 32.5.inches
 )
 
-val SIM_CONTROL_SCHEME = SwerveControl.PIDFirstOrder(
-    turnPIDConstants = PIDConstants(23.0,0.0,0.0),
-    //turnFF = AngularMotorFF(0.00126.volts,0.42520,0.0, angleUnit = radians),
+val SIM_CONTROL_SCHEME = SwerveControl.PIDSecondOrder(
+    turnPIDConstants = PIDConstants(15.0,0.0,0.0),
+    turnFF = AngularMotorFF(0.00126.volts,0.34,0.0, angleUnit = radians),
     drivePIDConstants = PIDConstants(0.1,0.0,0.0),
     driveFF = AngularMotorFF(0.00162.volts,0.13394,0.0, angleUnit = radians),
 )
 
 val REAL_CONTROL_SCHEME = SwerveControl.PIDFirstOrder(
-    turnPIDConstants = PIDConstants(10.0,0.0,0.0),
+    turnPIDConstants = PIDConstants(0.1,0.0,0.0),
     drivePIDConstants = PIDConstants(0.1,0.0,0.0),
     driveFF = AngularMotorFF(0.11697.volts,0.133420,0.0, angleUnit = radians),
 )

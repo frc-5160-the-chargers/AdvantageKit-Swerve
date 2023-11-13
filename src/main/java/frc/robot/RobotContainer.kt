@@ -3,21 +3,32 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot
 
+import com.batterystaple.kmeasure.quantities.Acceleration
+import edu.wpi.first.hal.AllianceStationID
 import edu.wpi.first.math.system.plant.DCMotor
+import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.RobotBase
+import edu.wpi.first.wpilibj.simulation.DriverStationSim
 import edu.wpi.first.wpilibj2.command.Command
 import frc.chargers.advantagekitextensions.loggedwrappers.LoggedIMU
-import frc.chargers.commands.*
+import frc.chargers.commands.InstantCommand
+import frc.chargers.commands.buildCommand
+import frc.chargers.commands.drivetrainCommands.runPathPlannerAuto
 import frc.chargers.constants.tuning.DashboardTuner
+import frc.chargers.controls.pid.PIDConstants
 import frc.chargers.framework.ChargerRobotContainer
 import frc.chargers.hardware.inputdevices.SwerveDriveController
 import frc.chargers.hardware.sensors.IMU
 import frc.chargers.hardware.sensors.IMUSim
 import frc.chargers.hardware.sensors.NavX
+import frc.chargers.hardware.sensors.withOffset
 import frc.chargers.hardware.subsystems.drivetrain.EncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystems.drivetrain.realEncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystems.drivetrain.simEncoderHolonomicDrivetrain
+import frc.chargers.utils.PathConstraints
+import frc.chargers.utils.PathData
 import frc.robot.commands.zeroPose
+import org.littletonrobotics.junction.Logger
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -60,7 +71,7 @@ object RobotContainer: ChargerRobotContainer() {
                 driveMotors = DriveHardware.driveMotors,
                 controlScheme = REAL_CONTROL_SCHEME,
                 constants = DRIVE_CONSTANTS,
-                gyro = gyro
+                gyro = gyro.withOffset(gyro.heading)
             )
         }else{
             drivetrain = simEncoderHolonomicDrivetrain(
@@ -71,6 +82,8 @@ object RobotContainer: ChargerRobotContainer() {
             )
             gyro = LoggedIMU(IMUSim(headingProviderImpl = drivetrain))
         }
+
+        DriverStationSim.setAllianceStationId(AllianceStationID.Blue1)
 
         
 
@@ -87,7 +100,8 @@ object RobotContainer: ChargerRobotContainer() {
             +drivetrain.zeroPose()
 
             loopForever(drivetrain){
-                drivetrain.swerveDrive(0.5,0.0,0.3)
+                drivetrain.swerveDrive(controller.swerveOutput, fieldRelative = true)
+                Logger.getInstance().recordOutput("rotation output", controller.swerveOutput.rotationPower)
             }
 
         }.finallyDo{ drivetrain.stop() }
@@ -110,9 +124,27 @@ object RobotContainer: ChargerRobotContainer() {
             name = "FF drivetrain characterization",
             logIndividualCommands = true
         ){
-            +drivetrain.zeroPose()
 
-            +drivetrain.characterizeTurnMotors()
+            with(
+                PathData(
+                    PIDConstants(0.3,0.0,0.0),
+                    PIDConstants(0.5,0.0,0.0),
+                    PathConstraints(drivetrain.maxLinearVelocity,Acceleration(3.0))
+                )
+            ){
+                drivetrain.runPathPlannerAuto(
+                    pathGroupName = "threepiece_auto"
+                ){
+                    "outtake" mapsTo InstantCommand{println("outtake activated!")}
+                    "intake" mapsTo InstantCommand{println("intake activated!")}
+                }
+            }
 
+            runOnce{
+                println("Alliance color: " + DriverStation.getAlliance())
+            }
+
+        }.finallyDo{
+            drivetrain.stop()
         }
 }
