@@ -4,7 +4,10 @@
 package frc.robot
 
 import com.batterystaple.kmeasure.units.*
+import com.ctre.phoenix6.configs.CANcoderConfiguration
+import com.ctre.phoenix6.signals.SensorDirectionValue
 import com.revrobotics.CANSparkMax
+import edu.wpi.first.wpilibj.RobotBase
 import frc.chargers.constants.drivetrain.SwerveConstants
 import frc.chargers.controls.feedforward.AngularMotorFF
 import frc.chargers.controls.pid.PIDConstants
@@ -14,16 +17,14 @@ import frc.chargers.hardware.sensors.encoders.absolute.ChargerCANcoder
 import frc.chargers.hardware.subsystemutils.swervedrive.SwerveControl
 import frc.chargers.hardware.subsystemutils.swervedrive.sparkMaxSwerveMotors
 import frc.chargers.hardware.subsystemutils.swervedrive.swerveCANcoders
+import frc.chargers.utils.Precision
 
 
-
-
-
-const val RESET_POSE_ON_STARTUP: Boolean = true
+val RESET_POSE_ON_STARTUP = RobotBase.isSimulation()
 
 val CONFIG = RobotConfig(
     isReplay = false,
-    tuningMode = true,
+    tuningMode = false,
     onError = { println("An error has occurred. Normally, this will write to the crash tracker disc. ") }
 )
 
@@ -32,25 +33,30 @@ object DriveHardware{
         topLeft = neoSparkMax(29),
         topRight = neoSparkMax(31),
         bottomLeft = neoSparkMax(22),
-        bottomRight = neoSparkMax(4)
+        bottomRight = neoSparkMax(3)
     ){
         idleMode = CANSparkMax.IdleMode.kBrake
+        //inverted = true
     }
 
-    // TBD
+
     val encoders = swerveCANcoders(
-        topLeft = ChargerCANcoder(44){ magnetOffset = 0.0.degrees },
-        topRight = ChargerCANcoder(42){ magnetOffset = 0.0.degrees },
-        bottomLeft = ChargerCANcoder(43){ magnetOffset = 0.0.degrees },
-        bottomRight = ChargerCANcoder(45){ magnetOffset = 0.0.degrees },
+        topLeft = ChargerCANcoder(44){ magnetOffset = -233.34.degrees },
+        topRight = ChargerCANcoder(42){ magnetOffset = -166.7.degrees},
+        bottomLeft = ChargerCANcoder(43){magnetOffset = -187.degrees},
+        bottomRight = ChargerCANcoder(45){magnetOffset = -190.98.degrees},
         useAbsoluteSensor = true
-    )
+    ){
+        sensorDirection = SensorDirectionValue.Clockwise_Positive
+    }
+
+
 
     val driveMotors = sparkMaxSwerveMotors(
         topLeft = neoSparkMax(10),
         topRight = neoSparkMax(16),
         bottomLeft = neoSparkMax(30),
-        bottomRight = neoSparkMax(3)
+        bottomRight = neoSparkMax(4)
     ){
         idleMode = CANSparkMax.IdleMode.kBrake
     }
@@ -70,7 +76,8 @@ val SIM_CONTROL_SCHEME = SwerveControl.PIDSecondOrder(
 )
 
 val REAL_CONTROL_SCHEME = SwerveControl.PIDFirstOrder(
-    turnPIDConstants = PIDConstants(0.1,0.0,0.0),
+    turnPIDConstants = PIDConstants(4.0,0.0,0.0),
+    // turnPrecision = Precision.Within(1.degrees),
     drivePIDConstants = PIDConstants(0.1,0.0,0.0),
     driveFF = AngularMotorFF(0.11697.volts,0.133420,0.0, angleUnit = radians),
 )

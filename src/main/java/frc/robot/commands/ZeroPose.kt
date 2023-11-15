@@ -11,7 +11,7 @@ fun EncoderHolonomicDrivetrain.zeroPose(): Command = buildCommand(
     name = "DrivetrainZeroPose"
 ) {
     runOnce(this@zeroPose){
-        if (RobotBase.isSimulation() && RESET_POSE_ON_STARTUP){
+        if (RESET_POSE_ON_STARTUP){
             poseEstimator.resetPose(UnitPose2d())
         }
     }

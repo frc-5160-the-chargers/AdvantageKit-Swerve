@@ -4,6 +4,7 @@
 package frc.robot
 
 import com.batterystaple.kmeasure.quantities.Acceleration
+import com.batterystaple.kmeasure.units.volts
 import edu.wpi.first.hal.AllianceStationID
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.DriverStation
@@ -12,6 +13,7 @@ import edu.wpi.first.wpilibj.simulation.DriverStationSim
 import edu.wpi.first.wpilibj2.command.Command
 import frc.chargers.advantagekitextensions.loggedwrappers.LoggedIMU
 import frc.chargers.commands.InstantCommand
+import frc.chargers.commands.RunCommand
 import frc.chargers.commands.buildCommand
 import frc.chargers.commands.drivetrainCommands.runPathPlannerAuto
 import frc.chargers.constants.tuning.DashboardTuner
@@ -27,6 +29,7 @@ import frc.chargers.hardware.subsystems.drivetrain.realEncoderHolonomicDrivetrai
 import frc.chargers.hardware.subsystems.drivetrain.simEncoderHolonomicDrivetrain
 import frc.chargers.utils.PathConstraints
 import frc.chargers.utils.PathData
+import frc.robot.commands.SwerveTurnMotorTest
 import frc.robot.commands.zeroPose
 import org.littletonrobotics.junction.Logger
 
@@ -47,7 +50,7 @@ object RobotContainer: ChargerRobotContainer() {
 
 
     private val controller = SwerveDriveController.fromDefaultBindings(
-        port = 1,
+        port = 0,
         driveMultiplier = 1.0,
         rotationMultiplier = -1.0,
         turboModeMultiplierRange = 1.0..2.0,
@@ -73,6 +76,7 @@ object RobotContainer: ChargerRobotContainer() {
                 constants = DRIVE_CONSTANTS,
                 gyro = gyro.withOffset(gyro.heading)
             )
+            println("robot is real")
         }else{
             drivetrain = simEncoderHolonomicDrivetrain(
                 turnGearbox = DCMotor.getNEO(1),
@@ -81,9 +85,31 @@ object RobotContainer: ChargerRobotContainer() {
                 constants = DRIVE_CONSTANTS
             )
             gyro = LoggedIMU(IMUSim(headingProviderImpl = drivetrain))
+            println("robot is sim")
         }
 
+
+
+
+
         DriverStationSim.setAllianceStationId(AllianceStationID.Blue1)
+
+        controller.x{
+            whileTrue(SwerveTurnMotorTest(drivetrain))
+        }
+
+        controller.y{
+            whileTrue(RunCommand(drivetrain){
+                drivetrain.apply{
+                    topLeft.io.setDriveVoltage(3.0.volts)
+                    topRight.io.setDriveVoltage(3.0.volts)
+                    bottomLeft.io.setDriveVoltage(3.0.volts)
+                    bottomRight.io.setDriveVoltage(3.0.volts)
+                }
+            })
+        }
+
+
 
         
 
@@ -100,8 +126,10 @@ object RobotContainer: ChargerRobotContainer() {
             +drivetrain.zeroPose()
 
             loopForever(drivetrain){
-                drivetrain.swerveDrive(controller.swerveOutput, fieldRelative = true)
+                drivetrain.swerveDrive(controller.swerveOutput, /*fieldRelative = true*/ )
                 Logger.getInstance().recordOutput("rotation output", controller.swerveOutput.rotationPower)
+
+
             }
 
         }.finallyDo{ drivetrain.stop() }
@@ -125,6 +153,8 @@ object RobotContainer: ChargerRobotContainer() {
             logIndividualCommands = true
         ){
 
+
+            /*
             with(
                 PathData(
                     PIDConstants(0.3,0.0,0.0),
@@ -142,6 +172,12 @@ object RobotContainer: ChargerRobotContainer() {
 
             runOnce{
                 println("Alliance color: " + DriverStation.getAlliance())
+            }
+
+             */
+
+            loopForever(drivetrain){
+                drivetrain.swerveDrive(0.2,0.2,0.0)
             }
 
         }.finallyDo{
