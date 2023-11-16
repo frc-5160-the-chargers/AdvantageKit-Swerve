@@ -129,7 +129,6 @@ object RobotContainer: ChargerRobotContainer() {
 
         println("tuning mode: " + DashboardTuner.tuningMode)
 
-        var isNeg = false
 
 
         drivetrain.defaultCommand = buildCommand(
@@ -139,11 +138,7 @@ object RobotContainer: ChargerRobotContainer() {
             +drivetrain.zeroPose()
 
             loopForever(drivetrain){
-                drivetrain.topLeft.io.setTurnVoltage(-3.0.volts)
-                drivetrain.topLeft.io.setTurnVoltage(3.0.volts)
 
-
-                /*
                 drivetrain.swerveDrive(controller.swerveOutput, /*fieldRelative = true*/ )
                 Logger.getInstance().apply{
                     recordOutput("Drivetrain(Swerve)/rotation output", controller.swerveOutput.rotationPower)
@@ -151,7 +146,7 @@ object RobotContainer: ChargerRobotContainer() {
                     recordOutput("Drivetrain(Swerve)/YPower", controller.swerveOutput.yPower)
                 }
 
-                 */
+
 
 
 

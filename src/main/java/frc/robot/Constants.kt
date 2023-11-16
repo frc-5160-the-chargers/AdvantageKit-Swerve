@@ -37,7 +37,7 @@ object DriveHardware{
         bottomRight = neoSparkMax(4)
     ){
         idleMode = CANSparkMax.IdleMode.kBrake
-        inverted = true
+        //inverted = true
     }
 
 
