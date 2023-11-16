@@ -4,6 +4,8 @@
 package frc.robot
 
 import com.batterystaple.kmeasure.quantities.Acceleration
+import com.batterystaple.kmeasure.units.degrees
+import com.batterystaple.kmeasure.units.seconds
 import com.batterystaple.kmeasure.units.volts
 import edu.wpi.first.hal.AllianceStationID
 import edu.wpi.first.math.system.plant.DCMotor
@@ -19,6 +21,7 @@ import frc.chargers.commands.drivetrainCommands.runPathPlannerAuto
 import frc.chargers.constants.tuning.DashboardTuner
 import frc.chargers.controls.pid.PIDConstants
 import frc.chargers.framework.ChargerRobotContainer
+import frc.chargers.framework.ConsoleLogger
 import frc.chargers.hardware.inputdevices.SwerveDriveController
 import frc.chargers.hardware.sensors.IMU
 import frc.chargers.hardware.sensors.IMUSim
@@ -51,8 +54,8 @@ object RobotContainer: ChargerRobotContainer() {
 
     private val controller = SwerveDriveController.fromDefaultBindings(
         port = 0,
-        driveMultiplier = 1.0,
-        rotationMultiplier = -1.0,
+        driveMultiplier = 0.7,
+        rotationMultiplier = -0.7,
         turboModeMultiplierRange = 1.0..2.0,
         precisionModeDividerRange = 1.0..4.0,
         deadband = 0.2,
@@ -74,7 +77,7 @@ object RobotContainer: ChargerRobotContainer() {
                 driveMotors = DriveHardware.driveMotors,
                 controlScheme = REAL_CONTROL_SCHEME,
                 constants = DRIVE_CONSTANTS,
-                gyro = gyro.withOffset(gyro.heading)
+                gyro = gyro
             )
             println("robot is real")
         }else{
@@ -98,6 +101,15 @@ object RobotContainer: ChargerRobotContainer() {
             whileTrue(SwerveTurnMotorTest(drivetrain))
         }
 
+        controller.a{
+            whileTrue(RunCommand(drivetrain){
+                drivetrain.topLeft.setDirection(0.0.degrees)
+                drivetrain.topRight.setDirection(0.0.degrees)
+                drivetrain.bottomLeft.setDirection(0.0.degrees)
+                drivetrain.bottomRight.setDirection(0.0.degrees)
+            })
+        }
+
         controller.y{
             whileTrue(RunCommand(drivetrain){
                 drivetrain.apply{
@@ -117,6 +129,7 @@ object RobotContainer: ChargerRobotContainer() {
 
         println("tuning mode: " + DashboardTuner.tuningMode)
 
+        var isNeg = false
 
 
         drivetrain.defaultCommand = buildCommand(
@@ -126,8 +139,20 @@ object RobotContainer: ChargerRobotContainer() {
             +drivetrain.zeroPose()
 
             loopForever(drivetrain){
+                drivetrain.topLeft.io.setTurnVoltage(-3.0.volts)
+                drivetrain.topLeft.io.setTurnVoltage(3.0.volts)
+
+
+                /*
                 drivetrain.swerveDrive(controller.swerveOutput, /*fieldRelative = true*/ )
-                Logger.getInstance().recordOutput("rotation output", controller.swerveOutput.rotationPower)
+                Logger.getInstance().apply{
+                    recordOutput("Drivetrain(Swerve)/rotation output", controller.swerveOutput.rotationPower)
+                    recordOutput("Drivetrain(Swerve)/xPower", controller.swerveOutput.xPower)
+                    recordOutput("Drivetrain(Swerve)/YPower", controller.swerveOutput.yPower)
+                }
+
+                 */
+
 
 
             }
@@ -145,6 +170,9 @@ object RobotContainer: ChargerRobotContainer() {
 
 
 
+    override fun testInit(){
+        ConsoleLogger.print()
+    }
 
 
     override val autonomousCommand: Command
@@ -176,8 +204,12 @@ object RobotContainer: ChargerRobotContainer() {
 
              */
 
+            loopFor(3.seconds,drivetrain){
+                drivetrain.swerveDrive(1.0,1.0,0.0)
+            }
+
             loopForever(drivetrain){
-                drivetrain.swerveDrive(0.2,0.2,0.0)
+                drivetrain.swerveDrive(0.0,0.0,0.0)
             }
 
         }.finallyDo{

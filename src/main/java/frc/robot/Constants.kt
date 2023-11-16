@@ -3,6 +3,7 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot
 
+import com.batterystaple.kmeasure.quantities.Velocity
 import com.batterystaple.kmeasure.units.*
 import com.ctre.phoenix6.configs.CANcoderConfiguration
 import com.ctre.phoenix6.signals.SensorDirectionValue
@@ -33,10 +34,10 @@ object DriveHardware{
         topLeft = neoSparkMax(29),
         topRight = neoSparkMax(31),
         bottomLeft = neoSparkMax(22),
-        bottomRight = neoSparkMax(3)
+        bottomRight = neoSparkMax(4)
     ){
         idleMode = CANSparkMax.IdleMode.kBrake
-        //inverted = true
+        inverted = true
     }
 
 
@@ -56,7 +57,7 @@ object DriveHardware{
         topLeft = neoSparkMax(10),
         topRight = neoSparkMax(16),
         bottomLeft = neoSparkMax(30),
-        bottomRight = neoSparkMax(4)
+        bottomRight = neoSparkMax(3)
     ){
         idleMode = CANSparkMax.IdleMode.kBrake
     }
@@ -64,20 +65,21 @@ object DriveHardware{
 
 
 val DRIVE_CONSTANTS = SwerveConstants.mk4iL2(
+    maxModuleSpeed = Velocity(4.0),
     trackWidth = 32.5.inches,
     wheelBase = 32.5.inches
 )
 
-val SIM_CONTROL_SCHEME = SwerveControl.PIDSecondOrder(
+val SIM_CONTROL_SCHEME = SwerveControl.PIDFirstOrder(
     turnPIDConstants = PIDConstants(15.0,0.0,0.0),
-    turnFF = AngularMotorFF(0.00126.volts,0.34,0.0, angleUnit = radians),
+    //turnFF = AngularMotorFF(0.00126.volts,0.34,0.0, angleUnit = radians),
     drivePIDConstants = PIDConstants(0.1,0.0,0.0),
     driveFF = AngularMotorFF(0.00162.volts,0.13394,0.0, angleUnit = radians),
 )
 
 val REAL_CONTROL_SCHEME = SwerveControl.PIDFirstOrder(
-    turnPIDConstants = PIDConstants(4.0,0.0,0.0),
-    // turnPrecision = Precision.Within(1.degrees),
+    turnPIDConstants = PIDConstants(3.0,0.0,0.0),
+    turnPrecision = Precision.Within(0.5.degrees),
     drivePIDConstants = PIDConstants(0.1,0.0,0.0),
     driveFF = AngularMotorFF(0.11697.volts,0.133420,0.0, angleUnit = radians),
 )
