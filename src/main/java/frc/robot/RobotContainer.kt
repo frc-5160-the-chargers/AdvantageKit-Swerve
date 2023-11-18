@@ -4,8 +4,8 @@
 package frc.robot
 
 import com.batterystaple.kmeasure.quantities.Acceleration
+import com.batterystaple.kmeasure.quantities.inUnit
 import com.batterystaple.kmeasure.units.degrees
-import com.batterystaple.kmeasure.units.seconds
 import com.batterystaple.kmeasure.units.volts
 import edu.wpi.first.hal.AllianceStationID
 import edu.wpi.first.math.system.plant.DCMotor
@@ -13,26 +13,29 @@ import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.simulation.DriverStationSim
 import edu.wpi.first.wpilibj2.command.Command
-import frc.chargers.advantagekitextensions.loggedwrappers.LoggedIMU
+import frc.chargers.advantagekitextensions.loggedwrappers.withLogging
 import frc.chargers.commands.InstantCommand
 import frc.chargers.commands.RunCommand
 import frc.chargers.commands.buildCommand
 import frc.chargers.commands.drivetrainCommands.runPathPlannerAuto
 import frc.chargers.constants.tuning.DashboardTuner
 import frc.chargers.controls.pid.PIDConstants
+import frc.chargers.framework.ChargerRobot
 import frc.chargers.framework.ChargerRobotContainer
 import frc.chargers.framework.ConsoleLogger
 import frc.chargers.hardware.inputdevices.SwerveDriveController
+import frc.chargers.hardware.motorcontrol.rev.neoSparkMax
 import frc.chargers.hardware.sensors.IMU
 import frc.chargers.hardware.sensors.IMUSim
 import frc.chargers.hardware.sensors.NavX
-import frc.chargers.hardware.sensors.withOffset
+import frc.chargers.hardware.sensors.encoders.absolute.ChargerCANcoder
 import frc.chargers.hardware.subsystems.drivetrain.EncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystems.drivetrain.realEncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystems.drivetrain.simEncoderHolonomicDrivetrain
+import frc.chargers.hardware.subsystemutils.swervedrive.sparkMaxSwerveMotors
+import frc.chargers.hardware.subsystemutils.swervedrive.swerveCANcoders
 import frc.chargers.utils.PathConstraints
 import frc.chargers.utils.PathData
-import frc.robot.commands.SwerveTurnMotorTest
 import frc.robot.commands.zeroPose
 import org.littletonrobotics.junction.Logger
 
@@ -54,8 +57,8 @@ object RobotContainer: ChargerRobotContainer() {
 
     private val controller = SwerveDriveController.fromDefaultBindings(
         port = 0,
-        driveMultiplier = 0.7,
-        rotationMultiplier = -0.7,
+        driveMultiplier = 0.5,
+        rotationMultiplier = -0.5,
         turboModeMultiplierRange = 1.0..2.0,
         precisionModeDividerRange = 1.0..4.0,
         deadband = 0.2,
@@ -67,14 +70,39 @@ object RobotContainer: ChargerRobotContainer() {
     init {
 
 
-        
-        
+
+
         if (RobotBase.isReal()){
-            gyro = LoggedIMU(NavX())
+            val navX = NavX()
+            gyro = navX.withLogging()
+            ChargerRobot.addToPeriodicLoop{
+                Logger.getInstance().recordOutput("NavXDirectHeadingDeg",navX.gyroscope.heading.inUnit(degrees))
+            }
             drivetrain = realEncoderHolonomicDrivetrain(
-                turnMotors = DriveHardware.turnMotors,
-                turnEncoders = DriveHardware.encoders,
-                driveMotors = DriveHardware.driveMotors,
+                turnMotors = sparkMaxSwerveMotors(
+                    topLeft = neoSparkMax(29),
+                    topRight = neoSparkMax(31),
+                    bottomLeft = neoSparkMax(22),
+                    bottomRight = neoSparkMax(4)
+                ),
+                turnEncoders = swerveCANcoders(
+                    topLeft = ChargerCANcoder(44),
+                    topRight = ChargerCANcoder(42),
+                    bottomLeft = ChargerCANcoder(43),
+                    bottomRight = ChargerCANcoder(45),
+                    useAbsoluteSensor = true
+                ).withOffsets(
+                    topLeftZero = 160.14.degrees,
+                    topRightZero = 117.42.degrees,
+                    bottomLeftZero = 77.6.degrees,
+                    bottomRightZero = (-21.973).degrees
+                ),
+                driveMotors = sparkMaxSwerveMotors(
+                    topLeft = neoSparkMax(10),
+                    topRight = neoSparkMax(16),
+                    bottomLeft = neoSparkMax(30){inverted = true},
+                    bottomRight = neoSparkMax(3)
+                ),
                 controlScheme = REAL_CONTROL_SCHEME,
                 constants = DRIVE_CONSTANTS,
                 gyro = gyro
@@ -87,7 +115,7 @@ object RobotContainer: ChargerRobotContainer() {
                 controlScheme = SIM_CONTROL_SCHEME,
                 constants = DRIVE_CONSTANTS
             )
-            gyro = LoggedIMU(IMUSim(headingProviderImpl = drivetrain))
+            gyro = IMUSim(headingProviderImpl = drivetrain).withLogging()
             println("robot is sim")
         }
 
@@ -97,29 +125,41 @@ object RobotContainer: ChargerRobotContainer() {
 
         DriverStationSim.setAllianceStationId(AllianceStationID.Blue1)
 
-        controller.x{
-            whileTrue(SwerveTurnMotorTest(drivetrain))
-        }
 
-        controller.a{
+
+        controller.x{
             whileTrue(RunCommand(drivetrain){
-                drivetrain.topLeft.setDirection(0.0.degrees)
-                drivetrain.topRight.setDirection(0.0.degrees)
-                drivetrain.bottomLeft.setDirection(0.0.degrees)
-                drivetrain.bottomRight.setDirection(0.0.degrees)
+                drivetrain.topLeft.setDirection(290.degrees)
+                drivetrain.topRight.setDirection(290.degrees)
+                drivetrain.bottomLeft.setDirection(290.degrees)
+                drivetrain.bottomRight.setDirection(290.degrees)
+            }.finallyDo{
+                drivetrain.stop()
             })
         }
 
         controller.y{
             whileTrue(RunCommand(drivetrain){
                 drivetrain.apply{
-                    topLeft.io.setDriveVoltage(3.0.volts)
-                    topRight.io.setDriveVoltage(3.0.volts)
-                    bottomLeft.io.setDriveVoltage(3.0.volts)
-                    bottomRight.io.setDriveVoltage(3.0.volts)
+                    topLeft.io.setDriveVoltage(1.0.volts)
+                    topRight.io.setDriveVoltage(1.0.volts)
+                    bottomLeft.io.setDriveVoltage(1.0.volts)
+                    bottomRight.io.setDriveVoltage(1.0.volts)
                 }
+            }.finallyDo{
+                drivetrain.stop()
             })
         }
+
+        controller.a().onTrue(InstantCommand{
+            gyro.zeroHeading()
+        })
+
+
+
+
+
+
 
 
 
@@ -131,6 +171,7 @@ object RobotContainer: ChargerRobotContainer() {
 
 
 
+
         drivetrain.defaultCommand = buildCommand(
             name = "DrivetrainDefaultCommand",
             logIndividualCommands = true
@@ -139,7 +180,7 @@ object RobotContainer: ChargerRobotContainer() {
 
             loopForever(drivetrain){
 
-                drivetrain.swerveDrive(controller.swerveOutput, /*fieldRelative = true*/ )
+                drivetrain.swerveDrive(controller.swerveOutput)
                 Logger.getInstance().apply{
                     recordOutput("Drivetrain(Swerve)/rotation output", controller.swerveOutput.rotationPower)
                     recordOutput("Drivetrain(Swerve)/xPower", controller.swerveOutput.xPower)
@@ -147,12 +188,11 @@ object RobotContainer: ChargerRobotContainer() {
                 }
 
 
-
-
-
             }
 
         }.finallyDo{ drivetrain.stop() }
+
+
 
 
 
@@ -176,8 +216,6 @@ object RobotContainer: ChargerRobotContainer() {
             logIndividualCommands = true
         ){
 
-
-            /*
             with(
                 PathData(
                     PIDConstants(0.3,0.0,0.0),
@@ -197,15 +235,6 @@ object RobotContainer: ChargerRobotContainer() {
                 println("Alliance color: " + DriverStation.getAlliance())
             }
 
-             */
-
-            loopFor(3.seconds,drivetrain){
-                drivetrain.swerveDrive(1.0,1.0,0.0)
-            }
-
-            loopForever(drivetrain){
-                drivetrain.swerveDrive(0.0,0.0,0.0)
-            }
 
         }.finallyDo{
             drivetrain.stop()
