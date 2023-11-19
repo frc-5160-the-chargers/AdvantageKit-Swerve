@@ -1,7 +1,6 @@
 package frc.robot.hardware.inputdevices
 
-import com.batterystaple.kmeasure.quantities.Angle
-import com.batterystaple.kmeasure.quantities.Scalar
+import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.degrees
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import frc.chargers.controls.pid.PIDConstants
@@ -18,18 +17,26 @@ import kotlin.math.abs
 object DriverController: ChargerController(port = 0, deadband = 0.2){
 
     /* Top-Level constants */
-    val aimToTargetEnabled = true
-    val aimToTargetPIDConstants = PIDConstants(0.3,0.0,0.0)
+    private val aimToTargetEnabled = true
+    private val aimToTargetPIDConstants = PIDConstants(0.5,0.0,0.1)
 
-    val driveMultiplierFunction = Polynomial(0.0,0.5)
-    val rotationMultiplierFunction = Polynomial(0.0,-0.5)
+    private val driveMultiplierFunction = Polynomial(0.0,0.6)
+    private val rotationMultiplierFunction = Polynomial(0.0,-0.6)
 
-    val forwardLimiter: ScalarRateLimiter? = null
-    val strafeLimiter: ScalarRateLimiter? = null
-    val rotationLimiter: ScalarRateLimiter? = null
+    private val forwardLimiter: ScalarRateLimiter? = null /*ScalarRateLimiter(
+        Scalar(0.6) / 1.seconds,
+        Scalar(-0.8) / 1.seconds,
+        Scalar(0.0) / 1.seconds
+    )*/
+    private val strafeLimiter: ScalarRateLimiter? = null /*ScalarRateLimiter(
+        Scalar(0.6) / 1.seconds,
+        Scalar(-0.8) / 1.seconds,
+        Scalar(0.0) / 1.seconds
+    )*/
+    private val rotationLimiter: ScalarRateLimiter? = null
 
-    val turboModeMultiplier = 1.0..2.0
-    val precisionModeDivider = 1.0..4.0
+    private val turboModeMultiplier = 1.0..2.0
+    private val precisionModeDivider = 1.0..4.0
 
 
 
@@ -48,9 +55,6 @@ object DriverController: ChargerController(port = 0, deadband = 0.2){
 
     /* Public API */
     val headingZeroButton: Trigger = back()
-
-
-
 
     fun swerveOutput(robotHeading: Angle? = null): ChassisPowers{
         var forward = driveMultiplierFunction( leftY.withScaledDeadband() )

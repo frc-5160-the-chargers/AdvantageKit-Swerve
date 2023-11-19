@@ -3,21 +3,15 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot
 
-import com.batterystaple.kmeasure.quantities.Acceleration
-import com.batterystaple.kmeasure.quantities.inUnit
+import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.degrees
 import edu.wpi.first.hal.AllianceStationID
 import edu.wpi.first.math.system.plant.DCMotor
-import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.simulation.DriverStationSim
 import edu.wpi.first.wpilibj2.command.Command
 import frc.chargers.advantagekitextensions.loggedwrappers.withLogging
-import frc.chargers.commands.InstantCommand
-import frc.chargers.commands.buildCommand
-import frc.chargers.commands.drivetrainCommands.runPathPlannerAuto
 import frc.chargers.constants.tuning.DashboardTuner
-import frc.chargers.controls.pid.PIDConstants
 import frc.chargers.framework.ChargerRobot
 import frc.chargers.framework.ChargerRobotContainer
 import frc.chargers.framework.ConsoleLogger
@@ -31,15 +25,15 @@ import frc.chargers.hardware.subsystems.drivetrain.realEncoderHolonomicDrivetrai
 import frc.chargers.hardware.subsystems.drivetrain.simEncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystemutils.swervedrive.sparkMaxSwerveMotors
 import frc.chargers.hardware.subsystemutils.swervedrive.swerveCANcoders
-import frc.chargers.utils.PathConstraints
-import frc.chargers.utils.PathData
-import frc.robot.commands.zeroPose
 import org.littletonrobotics.junction.Logger
 import edu.wpi.first.wpilibj2.command.InstantCommand
+import frc.chargers.commands.*
+import frc.chargers.wpilibextensions.geometry.UnitPose2d
 import frc.robot.hardware.inputdevices.DriverController
 import frc.robot.hardware.subsystems.DRIVE_CONSTANTS
 import frc.robot.hardware.subsystems.DRIVE_REAL_CONTROL_SCHEME
 import frc.robot.hardware.subsystems.DRIVE_SIM_CONTROL_SCHEME
+import frc.robot.hardware.subsystems.RESET_POSE_ON_STARTUP
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -51,8 +45,11 @@ object RobotContainer: ChargerRobotContainer() {
 
 
 
-    
+    // swerve drivetrain; implemented in chargerlib
     private val drivetrain: EncoderHolonomicDrivetrain
+    // the IMU type is an interface: designed to hold all the data from an IMU,
+    // such as altitude, heading, roll, pitch, yaw, etc.
+    // also a chargerlib implementation
     private val gyro: IMU
 
 
@@ -66,11 +63,31 @@ object RobotContainer: ChargerRobotContainer() {
 
 
         if (RobotBase.isReal()){
+            // custom AHRS wrapper that utilizes the units library
             val navX = NavX()
+            // creates a LoggedIMU class, which allows for log & replay support
+            // for classes that implement the IMU interface.
+            // implements the IMU interface itself.
             gyro = navX.withLogging()
             ChargerRobot.addToPeriodicLoop{
                 Logger.getInstance().recordOutput("NavXDirectHeadingDeg",navX.gyroscope.heading.inUnit(degrees))
             }
+
+            /*
+            Drivetrain instantiation.
+
+            Details:
+            A. instead of defining individual swerve modules,
+            there are helper classes(SwerveMotors and SwerveEncoders) that hold the motors and encoders nessecary.
+
+            Chargerlib has its own Encoder class, with a bunch of wrappers
+            that implement it(for example, ChargerCANcoder extends a CANcoder).
+
+            In addition, it has its own EncoderMotorController class, which is a motor bundled with an encoder.
+            The "neoSparkMax" function creates an instance of this custom wrapper
+            (which also subclasses the regular CANSparkMax class).
+
+             */
             drivetrain = realEncoderHolonomicDrivetrain(
                 turnMotors = sparkMaxSwerveMotors(
                     topLeft = neoSparkMax(29),
@@ -122,23 +139,31 @@ object RobotContainer: ChargerRobotContainer() {
 
         DriverController.headingZeroButton.onTrue(InstantCommand(gyro::zeroHeading))
 
-
         println("tuning mode: " + DashboardTuner.tuningMode)
 
+        // uses kotlin property access syntax to replace setDefaultCommand().
+        // in addition, uses the buildCommand DSL, which essentially is a sequential command group
+        // in the syntax of a domain-specific language.
         drivetrain.defaultCommand = buildCommand(
             name = "DrivetrainDefaultCommand",
             logIndividualCommands = true
         ){
-            +drivetrain.zeroPose()
+
+            if (RESET_POSE_ON_STARTUP){
+                runOnce(drivetrain){
+                    drivetrain.poseEstimator.resetPose(UnitPose2d())
+                }
+            }
 
             loopForever(drivetrain){
                 drivetrain.swerveDrive(
-                    DriverController.swerveOutput(gyro.heading)
+                    DriverController.swerveOutput(drivetrain.heading)
                 )
             }
 
-            onEnd(drivetrain::stop)
-
+            onEnd{
+                drivetrain.stop()
+            }
         }
 
 
@@ -160,33 +185,7 @@ object RobotContainer: ChargerRobotContainer() {
     }
 
 
+
     override val autonomousCommand: Command
-        get() = buildCommand(
-            name = "FF drivetrain characterization",
-            logIndividualCommands = true
-        ){
-
-            with(
-                PathData(
-                    PIDConstants(0.3,0.0,0.0),
-                    PIDConstants(0.5,0.0,0.0),
-                    PathConstraints(drivetrain.maxLinearVelocity,Acceleration(3.0))
-                )
-            ){
-                drivetrain.runPathPlannerAuto(
-                    pathGroupName = "threepiece_auto"
-                ){
-                    "outtake" mapsTo InstantCommand{println("outtake activated!")}
-                    "intake" mapsTo InstantCommand{println("intake activated!")}
-                }
-            }
-
-            runOnce{
-                println("Alliance color: " + DriverStation.getAlliance())
-            }
-
-            onEnd(drivetrain::stop)
-
-
-        }
+        get() = drivetrain.characterizeTurnMotors()
 }
