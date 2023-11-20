@@ -10,7 +10,7 @@ import frc.robot.BuildConstants.*
 
 
 val ROBOT = ChargerRobot(
-    { RobotContainer },
+    { RobotContainer() },
     gitData = GitData(
         projectName = MAVEN_NAME,
         buildDate = BUILD_DATE,

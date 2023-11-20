@@ -3,7 +3,7 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot.hardware.subsystems
 
-import com.batterystaple.kmeasure.quantities.Velocity
+import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.*
 import edu.wpi.first.wpilibj.RobotBase
 import frc.chargers.constants.drivetrain.SwerveConstants
@@ -17,7 +17,7 @@ val RESET_POSE_ON_STARTUP = RobotBase.isSimulation()
 
 
 val DRIVE_CONSTANTS = SwerveConstants.mk4iL2(
-    maxModuleSpeed = Velocity(4.0),
+    maxModuleSpeed = 4.0.meters / 1.seconds,
     trackWidth = 32.5.inches,
     wheelBase = 32.5.inches
 )

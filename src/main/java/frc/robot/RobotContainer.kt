@@ -30,10 +30,7 @@ import edu.wpi.first.wpilibj2.command.InstantCommand
 import frc.chargers.commands.*
 import frc.chargers.wpilibextensions.geometry.UnitPose2d
 import frc.robot.hardware.inputdevices.DriverController
-import frc.robot.hardware.subsystems.DRIVE_CONSTANTS
-import frc.robot.hardware.subsystems.DRIVE_REAL_CONTROL_SCHEME
-import frc.robot.hardware.subsystems.DRIVE_SIM_CONTROL_SCHEME
-import frc.robot.hardware.subsystems.RESET_POSE_ON_STARTUP
+import frc.robot.hardware.subsystems.*
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -41,7 +38,7 @@ import frc.robot.hardware.subsystems.RESET_POSE_ON_STARTUP
  * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and trigger mappings) should be declared here.
  */
-object RobotContainer: ChargerRobotContainer() {
+class RobotContainer: ChargerRobotContainer() {
 
 
 
@@ -156,9 +153,9 @@ object RobotContainer: ChargerRobotContainer() {
             }
 
             loopForever(drivetrain){
-                drivetrain.swerveDrive(
-                    DriverController.swerveOutput(drivetrain.heading)
-                )
+                //drivetrain.swerveDrive(DriverController.swerveOutput(drivetrain.heading))
+                drivetrain.swerveDrive(0.5,0.0,0.5)
+                //drivetrain.velocityDrive(0.5 * drivetrain.maxLinearVelocity, Velocity(0.0), 0.5 * drivetrain.maxRotationalVelocity)
             }
 
             onEnd{

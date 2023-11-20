@@ -2,6 +2,7 @@ package frc.robot.hardware.inputdevices
 
 import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.degrees
+import com.batterystaple.kmeasure.units.seconds
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import frc.chargers.controls.pid.PIDConstants
 import frc.chargers.controls.pid.UnitSuperPIDController
@@ -23,16 +24,16 @@ object DriverController: ChargerController(port = 0, deadband = 0.2){
     private val driveMultiplierFunction = Polynomial(0.0,0.6)
     private val rotationMultiplierFunction = Polynomial(0.0,-0.6)
 
-    private val forwardLimiter: ScalarRateLimiter? = null /*ScalarRateLimiter(
+    private val forwardLimiter: ScalarRateLimiter? = ScalarRateLimiter(
         Scalar(0.6) / 1.seconds,
         Scalar(-0.8) / 1.seconds,
         Scalar(0.0) / 1.seconds
-    )*/
-    private val strafeLimiter: ScalarRateLimiter? = null /*ScalarRateLimiter(
+    )
+    private val strafeLimiter: ScalarRateLimiter? = ScalarRateLimiter(
         Scalar(0.6) / 1.seconds,
         Scalar(-0.8) / 1.seconds,
         Scalar(0.0) / 1.seconds
-    )*/
+    )
     private val rotationLimiter: ScalarRateLimiter? = null
 
     private val turboModeMultiplier = 1.0..2.0
