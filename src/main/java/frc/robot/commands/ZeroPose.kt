@@ -3,7 +3,7 @@ package frc.robot.commands
 import edu.wpi.first.wpilibj2.command.Command
 import frc.chargers.commands.buildCommand
 import frc.chargers.hardware.subsystems.drivetrain.EncoderHolonomicDrivetrain
-import frc.chargers.wpilibextensions.geometry.UnitPose2d
+import frc.chargers.wpilibextensions.geometry.twodimensional.UnitPose2d
 import frc.robot.hardware.subsystems.RESET_POSE_ON_STARTUP
 
 fun EncoderHolonomicDrivetrain.zeroPose(): Command = buildCommand(

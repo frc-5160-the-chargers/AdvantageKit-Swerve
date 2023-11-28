@@ -17,15 +17,15 @@ val RESET_POSE_ON_STARTUP = RobotBase.isSimulation()
 
 
 val DRIVE_CONSTANTS = SwerveConstants.mk4iL2(
-    maxModuleSpeed = 4.0.meters / 1.seconds,
+    maxModuleSpeed = 4.55.meters / 1.seconds,
     trackWidth = 32.5.inches,
     wheelBase = 32.5.inches
 )
 
-val DRIVE_SIM_CONTROL_SCHEME = SwerveControl.PIDSecondOrder(
+val DRIVE_SIM_CONTROL_SCHEME = SwerveControl.PIDFirstOrder(
     turnPIDConstants = PIDConstants(15.0,0.0,0.0),
-    //turnConstraints = AngularTrapezoidProfile.Constraints(5.0.rotations / 1.seconds,AngularAcceleration(7.0)),
-    turnFF = AngularMotorFF(0.00126.volts,0.4250,0.0, angleUnit = radians),
+    //turnConstraints = AngularMotionConstraints(5.0.rotations / 1.seconds,AngularAcceleration(7.0)),
+    //turnFF = AngularMotorFF(0.00126.volts,0.4250,0.0, angleUnit = radians),
     drivePIDConstants = PIDConstants(0.1,0.0,0.0),
     driveFF = AngularMotorFF(0.00162.volts,0.13394,0.0, angleUnit = radians),
 )

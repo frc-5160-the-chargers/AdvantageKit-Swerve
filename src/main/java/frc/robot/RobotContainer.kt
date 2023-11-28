@@ -9,7 +9,7 @@ import edu.wpi.first.hal.AllianceStationID
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.simulation.DriverStationSim
-import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.*
 import frc.chargers.advantagekitextensions.loggedwrappers.withLogging
 import frc.chargers.constants.tuning.DashboardTuner
 import frc.chargers.framework.ChargerRobot
@@ -26,9 +26,8 @@ import frc.chargers.hardware.subsystems.drivetrain.simEncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystemutils.swervedrive.sparkMaxSwerveMotors
 import frc.chargers.hardware.subsystemutils.swervedrive.swerveCANcoders
 import org.littletonrobotics.junction.Logger
-import edu.wpi.first.wpilibj2.command.InstantCommand
 import frc.chargers.commands.*
-import frc.chargers.wpilibextensions.geometry.UnitPose2d
+import frc.chargers.wpilibextensions.geometry.twodimensional.UnitPose2d
 import frc.robot.hardware.inputdevices.DriverController
 import frc.robot.hardware.subsystems.*
 
@@ -54,6 +53,7 @@ class RobotContainer: ChargerRobotContainer() {
 
     /** The container for the robot. Contains subsystems, OI devices, and commands.  */
     init {
+
 
         DriverController
 
@@ -87,10 +87,10 @@ class RobotContainer: ChargerRobotContainer() {
              */
             drivetrain = realEncoderHolonomicDrivetrain(
                 turnMotors = sparkMaxSwerveMotors(
-                    topLeft = neoSparkMax(29),
-                    topRight = neoSparkMax(31),
-                    bottomLeft = neoSparkMax(22),
-                    bottomRight = neoSparkMax(4)
+                    topLeft = neoSparkMax(29), /*inverted = false*/
+                    topRight = neoSparkMax(31) /*{inverted = true}*/ ,
+                    bottomLeft = neoSparkMax(22), /*inverted = false*/
+                    bottomRight = neoSparkMax(4) /*inverted = false*/
                 ),
                 turnEncoders = swerveCANcoders(
                     topLeft = ChargerCANcoder(44),
@@ -99,16 +99,16 @@ class RobotContainer: ChargerRobotContainer() {
                     bottomRight = ChargerCANcoder(45),
                     useAbsoluteSensor = true
                 ).withOffsets(
-                    topLeftZero = 160.14.degrees,
-                    topRightZero = 117.42.degrees,
-                    bottomLeftZero = 77.6.degrees,
-                    bottomRightZero = (-21.973).degrees
+                    topLeftZero = 39.11.degrees,
+                    topRightZero = 107.92.degrees,
+                    bottomLeftZero = 264.46.degrees,
+                    bottomRightZero = 345.93.degrees
                 ),
                 driveMotors = sparkMaxSwerveMotors(
-                    topLeft = neoSparkMax(10),
-                    topRight = neoSparkMax(16),
-                    bottomLeft = neoSparkMax(30){inverted = true},
-                    bottomRight = neoSparkMax(3)
+                    topLeft = neoSparkMax(10){inverted = true},
+                    topRight = neoSparkMax(16){inverted = false},
+                    bottomLeft = neoSparkMax(30){inverted = false},
+                    bottomRight = neoSparkMax(3){inverted = false}
                 ),
                 controlScheme = DRIVE_REAL_CONTROL_SCHEME,
                 constants = DRIVE_CONSTANTS,
@@ -127,14 +127,38 @@ class RobotContainer: ChargerRobotContainer() {
         }
 
 
+        //val subsystem = object: SubsystemBase(){}
+        //RunCommand{println("I exist! Hello!")}.ignoringDisable(true).schedule()
+
 
 
 
         DriverStationSim.setAllianceStationId(AllianceStationID.Blue1)
 
 
+        val resetAimToAngle = InstantCommand{DriverController.targetHeading = null}
+
 
         DriverController.headingZeroButton.onTrue(InstantCommand(gyro::zeroHeading))
+
+
+        DriverController.pointNorthButton.onTrue(
+            InstantCommand{DriverController.targetHeading = 0.degrees}
+        ).onFalse(resetAimToAngle)
+
+        DriverController.pointEastButton.onTrue(
+            InstantCommand{DriverController.targetHeading = 90.degrees}
+        ).onFalse(resetAimToAngle)
+
+        DriverController.pointSouthButton.onTrue(
+            InstantCommand{DriverController.targetHeading = 180.degrees}
+        ).onFalse(resetAimToAngle)
+
+        DriverController.pointWestButton.onTrue(
+            InstantCommand{DriverController.targetHeading = 270.degrees}
+        ).onFalse(resetAimToAngle)
+
+
 
         println("tuning mode: " + DashboardTuner.tuningMode)
 
@@ -145,23 +169,22 @@ class RobotContainer: ChargerRobotContainer() {
             name = "DrivetrainDefaultCommand",
             logIndividualCommands = true
         ){
+            addRequirements(drivetrain)
 
-            if (RESET_POSE_ON_STARTUP){
-                runOnce(drivetrain){
-                    drivetrain.poseEstimator.resetPose(UnitPose2d())
-                }
+            runOnce{
+                if (RESET_POSE_ON_STARTUP) drivetrain.poseEstimator.resetPose(UnitPose2d())
             }
 
-            loopForever(drivetrain){
-                //drivetrain.swerveDrive(DriverController.swerveOutput(drivetrain.heading))
-                drivetrain.swerveDrive(0.5,0.0,0.5)
-                //drivetrain.velocityDrive(0.5 * drivetrain.maxLinearVelocity, Velocity(0.0), 0.5 * drivetrain.maxRotationalVelocity)
+            loopForever{
+                drivetrain.swerveDrive(DriverController.swerveOutput(gyro.heading), fieldRelative = true)
             }
 
             onEnd{
                 drivetrain.stop()
             }
         }
+
+
 
 
 
@@ -183,6 +206,8 @@ class RobotContainer: ChargerRobotContainer() {
 
 
 
+
+
     override val autonomousCommand: Command
-        get() = drivetrain.characterizeTurnMotors()
+        get() = DoNothing()
 }
