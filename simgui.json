@@ -13,7 +13,10 @@
       "/LiveWindow/Ungrouped/PIDController[8]": "PIDController",
       "/LiveWindow/Ungrouped/PIDController[9]": "PIDController",
       "/LiveWindow/Ungrouped/Scheduler": "Scheduler",
-      "/SmartDashboard/Field": "Field2d"
+      "/SmartDashboard/Field": "Field2d",
+      "/SmartDashboard/SIM_VISION_CAMERA_1(DO NOT USE IN REAL ROBOT) Sim Field": "Field2d",
+      "/SmartDashboard/Sim Camera Sim Field": "Field2d",
+      "/SmartDashboard/Test Camera 1 Sim Field": "Field2d"
     },
     "windows": {
       "/SmartDashboard/Field": {
@@ -29,6 +32,19 @@
     },
     "transitory": {
       "AdvantageKit": {
+        "ApriltagVision": {
+          "BestTarget": {
+            "TransformFromCamera": {
+              "open": true
+            }
+          },
+          "OtherTargets": {
+            "TransformFromCamera": {
+              "open": true
+            }
+          },
+          "open": true
+        },
         "DashboardInputs": {
           "TunableValues": {
             "Drivetrain(Swerve)": {
@@ -59,6 +75,12 @@
             "open": true
           },
           "HeadingData": {
+            "open": true
+          },
+          "PoseData": {
+            "Pose Source 1": {
+              "open": true
+            },
             "open": true
           },
           "TopLeftSwerveModule": {
@@ -164,6 +186,15 @@
             "open": true
           }
         }
+      },
+      "photonvision": {
+        "Sim Camera": {
+          "open": true
+        },
+        "Test Camera 1": {
+          "open": true
+        },
+        "open": true
       }
     }
   }

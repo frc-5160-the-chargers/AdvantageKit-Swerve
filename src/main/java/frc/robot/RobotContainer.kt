@@ -3,33 +3,41 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot
 
-import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.degrees
+import com.batterystaple.kmeasure.units.inches
+import com.batterystaple.kmeasure.units.meters
+import edu.wpi.first.apriltag.AprilTagFields
 import edu.wpi.first.hal.AllianceStationID
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.simulation.DriverStationSim
-import edu.wpi.first.wpilibj2.command.*
-import frc.chargers.advantagekitextensions.loggedwrappers.withLogging
+import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.InstantCommand
+import frc.chargers.commands.DoNothing
+import frc.chargers.commands.InstantCommand
+import frc.chargers.commands.buildCommand
 import frc.chargers.constants.tuning.DashboardTuner
-import frc.chargers.framework.ChargerRobot
 import frc.chargers.framework.ChargerRobotContainer
 import frc.chargers.framework.ConsoleLogger
 import frc.chargers.hardware.motorcontrol.rev.neoSparkMax
-import frc.chargers.hardware.sensors.IMU
-import frc.chargers.hardware.sensors.IMUSim
-import frc.chargers.hardware.sensors.NavX
+import frc.chargers.hardware.sensors.cameras.vision.ApriltagCamSim
+import frc.chargers.hardware.sensors.cameras.vision.VisionPipeline
+import frc.chargers.hardware.sensors.cameras.vision.VisionResult
+import frc.chargers.hardware.sensors.cameras.vision.advantageKitApriltagPipeline
+import frc.chargers.hardware.sensors.cameras.vision.limelight.Limelight
 import frc.chargers.hardware.sensors.encoders.absolute.ChargerCANcoder
+import frc.chargers.hardware.sensors.imu.IMU
+import frc.chargers.hardware.sensors.imu.IMUSim
+import frc.chargers.hardware.sensors.imu.NavX
+import frc.chargers.hardware.sensors.imu.advantageKitIMU
 import frc.chargers.hardware.subsystems.drivetrain.EncoderHolonomicDrivetrain
-import frc.chargers.hardware.subsystems.drivetrain.realEncoderHolonomicDrivetrain
-import frc.chargers.hardware.subsystems.drivetrain.simEncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystemutils.swervedrive.sparkMaxSwerveMotors
 import frc.chargers.hardware.subsystemutils.swervedrive.swerveCANcoders
-import org.littletonrobotics.junction.Logger
-import frc.chargers.commands.*
+import frc.chargers.wpilibextensions.geometry.rotation.Rotation3d
+import frc.chargers.wpilibextensions.geometry.threedimensional.UnitTransform3d
+import frc.chargers.wpilibextensions.geometry.threedimensional.UnitTranslation3d
 import frc.chargers.wpilibextensions.geometry.twodimensional.UnitPose2d
 import frc.robot.hardware.inputdevices.DriverController
-import frc.robot.hardware.subsystems.*
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -39,14 +47,116 @@ import frc.robot.hardware.subsystems.*
  */
 class RobotContainer: ChargerRobotContainer() {
 
+    private object RealHardware{
+        val navX = NavX()
 
+        val limelight = Limelight(
+            lensHeight = 0.5.meters,
+            mountAngle = 30.degrees
+        )
+
+        val swerveTurnMotors = sparkMaxSwerveMotors(
+            topLeft = neoSparkMax(29), /*inverted = false*/
+            topRight = neoSparkMax(31) /*{inverted = true}*/ ,
+            bottomLeft = neoSparkMax(22), /*inverted = false*/
+            bottomRight = neoSparkMax(4) /*inverted = false*/
+        )
+
+        val swerveDriveMotors = sparkMaxSwerveMotors(
+            topLeft = neoSparkMax(10){inverted = true},
+            topRight = neoSparkMax(16){inverted = false},
+            bottomLeft = neoSparkMax(30){inverted = false},
+            bottomRight = neoSparkMax(3){inverted = false}
+        )
+
+        val swerveEncoders = swerveCANcoders(
+            topLeft = ChargerCANcoder(44),
+            topRight = ChargerCANcoder(42),
+            bottomLeft = ChargerCANcoder(43),
+            bottomRight = ChargerCANcoder(45),
+            useAbsoluteSensor = true
+        ).withOffsets(
+            topLeftZero = 39.11.degrees,
+            topRightZero = 107.92.degrees,
+            bottomLeftZero = 264.46.degrees,
+            bottomRightZero = 345.93.degrees
+        )
+    }
+
+
+    /*
+    the IMU type is an interface: designed to hold all the data from an IMU,
+    such as altitude, heading, roll, pitch, yaw, etc.
+
+    the function "advantageKitIMU" creates a
+     */
+    private val gyro: IMU = advantageKitIMU(
+        "IMU",
+        // implementation of the IMU interface on the real robot
+        realImpl = RealHardware.navX,
+        // implementation of the IMU interface on the sim robot.
+        simImpl = IMUSim()
+    )
 
     // swerve drivetrain; implemented in chargerlib
-    private val drivetrain: EncoderHolonomicDrivetrain
-    // the IMU type is an interface: designed to hold all the data from an IMU,
-    // such as altitude, heading, roll, pitch, yaw, etc.
-    // also a chargerlib implementation
-    private val gyro: IMU
+    private val drivetrain = EncoderHolonomicDrivetrain(
+        turnMotors = RealHardware.swerveTurnMotors,
+        turnEncoders = RealHardware.swerveEncoders,
+        driveMotors = RealHardware.swerveDriveMotors,
+        turnGearbox = DCMotor.getNEO(1),
+        driveGearbox = DCMotor.getNEO(1),
+        controlScheme = if (RobotBase.isReal()) DRIVE_REAL_CONTROL_SCHEME else DRIVE_SIM_CONTROL_SCHEME,
+        constants = DRIVE_CONSTANTS,
+        gyro = if(RobotBase.isReal()) gyro else null
+    ).also{
+        IMUSim.setHeadingSource(it)
+        IMUSim.setChassisSpeedsSource { it.currentSpeeds }
+    }
+
+
+    /*
+    Creates an instance of the VisionPipeline<VisionResult.Apriltag> interface,
+    which is essentially a generic vision camera that can detect apriltags.
+
+    The "advantageKitApriltagPipeline" function creates an implementation of this interface
+    with advantagekit support: I.E logging & replay.
+     */
+    private val visionCamera: VisionPipeline<VisionResult.Apriltag> =
+        advantageKitApriltagPipeline(
+            "ApriltagVision",
+            // implementation of VisionPipeline<VisionResult.Apriltag> used on real robot
+            realImpl = RealHardware.limelight.ApriltagPipeline(id = 0),
+            // implementation of VisionPipeline<VisionResult.Apriltag> used in simulation
+            simImpl = ApriltagCamSim(
+                camName = "Sim Camera",
+                robotPoseSupplier = drivetrain.poseEstimator,
+                robotToCam = UnitTransform3d(
+                    UnitTranslation3d(
+                        0.0.inches,
+                        0.inches,
+                        0.5.meters
+                    ),
+                    Rotation3d(
+                        0.degrees,
+                        60.degrees,
+                        0.degrees
+                    )
+                ),
+                fov = 180.degrees,
+                ledRange = 20.meters,
+                minTargetArea = 10.0,
+                cameraResHeight = 640,
+                cameraResWidth = 480,
+                fieldMap = AprilTagFields.k2023ChargedUp.loadAprilTagLayoutField()
+            ).also{
+                if (RobotBase.isSimulation()){
+                    drivetrain.poseEstimator.addPoseSuppliers(it.PoseEstimator())
+                }
+            }
+        )
+
+
+
 
 
 
@@ -54,112 +164,11 @@ class RobotContainer: ChargerRobotContainer() {
     /** The container for the robot. Contains subsystems, OI devices, and commands.  */
     init {
 
-
-        DriverController
-
-
-
-        if (RobotBase.isReal()){
-            // custom AHRS wrapper that utilizes the units library
-            val navX = NavX()
-            // creates a LoggedIMU class, which allows for log & replay support
-            // for classes that implement the IMU interface.
-            // implements the IMU interface itself.
-            gyro = navX.withLogging()
-            ChargerRobot.addToPeriodicLoop{
-                Logger.getInstance().recordOutput("NavXDirectHeadingDeg",navX.gyroscope.heading.inUnit(degrees))
-            }
-
-            /*
-            Drivetrain instantiation.
-
-            Details:
-            A. instead of defining individual swerve modules,
-            there are helper classes(SwerveMotors and SwerveEncoders) that hold the motors and encoders nessecary.
-
-            Chargerlib has its own Encoder class, with a bunch of wrappers
-            that implement it(for example, ChargerCANcoder extends a CANcoder).
-
-            In addition, it has its own EncoderMotorController class, which is a motor bundled with an encoder.
-            The "neoSparkMax" function creates an instance of this custom wrapper
-            (which also subclasses the regular CANSparkMax class).
-
-             */
-            drivetrain = realEncoderHolonomicDrivetrain(
-                turnMotors = sparkMaxSwerveMotors(
-                    topLeft = neoSparkMax(29), /*inverted = false*/
-                    topRight = neoSparkMax(31) /*{inverted = true}*/ ,
-                    bottomLeft = neoSparkMax(22), /*inverted = false*/
-                    bottomRight = neoSparkMax(4) /*inverted = false*/
-                ),
-                turnEncoders = swerveCANcoders(
-                    topLeft = ChargerCANcoder(44),
-                    topRight = ChargerCANcoder(42),
-                    bottomLeft = ChargerCANcoder(43),
-                    bottomRight = ChargerCANcoder(45),
-                    useAbsoluteSensor = true
-                ).withOffsets(
-                    topLeftZero = 39.11.degrees,
-                    topRightZero = 107.92.degrees,
-                    bottomLeftZero = 264.46.degrees,
-                    bottomRightZero = 345.93.degrees
-                ),
-                driveMotors = sparkMaxSwerveMotors(
-                    topLeft = neoSparkMax(10){inverted = true},
-                    topRight = neoSparkMax(16){inverted = false},
-                    bottomLeft = neoSparkMax(30){inverted = false},
-                    bottomRight = neoSparkMax(3){inverted = false}
-                ),
-                controlScheme = DRIVE_REAL_CONTROL_SCHEME,
-                constants = DRIVE_CONSTANTS,
-                gyro = gyro
-            )
-            println("robot is real")
-        }else{
-            drivetrain = simEncoderHolonomicDrivetrain(
-                turnGearbox = DCMotor.getNEO(1),
-                driveGearbox = DCMotor.getNEO(1),
-                controlScheme = DRIVE_SIM_CONTROL_SCHEME,
-                constants = DRIVE_CONSTANTS
-            )
-            gyro = IMUSim(headingProviderImpl = drivetrain).withLogging()
-            println("robot is sim")
-        }
-
-
-        //val subsystem = object: SubsystemBase(){}
-        //RunCommand{println("I exist! Hello!")}.ignoringDisable(true).schedule()
-
+        configureBindings()
 
 
 
         DriverStationSim.setAllianceStationId(AllianceStationID.Blue1)
-
-
-        val resetAimToAngle = InstantCommand{DriverController.targetHeading = null}
-
-
-        DriverController.headingZeroButton.onTrue(InstantCommand(gyro::zeroHeading))
-
-
-        DriverController.pointNorthButton.onTrue(
-            InstantCommand{DriverController.targetHeading = 0.degrees}
-        ).onFalse(resetAimToAngle)
-
-        DriverController.pointEastButton.onTrue(
-            InstantCommand{DriverController.targetHeading = 90.degrees}
-        ).onFalse(resetAimToAngle)
-
-        DriverController.pointSouthButton.onTrue(
-            InstantCommand{DriverController.targetHeading = 180.degrees}
-        ).onFalse(resetAimToAngle)
-
-        DriverController.pointWestButton.onTrue(
-            InstantCommand{DriverController.targetHeading = 270.degrees}
-        ).onFalse(resetAimToAngle)
-
-
-
         println("tuning mode: " + DashboardTuner.tuningMode)
 
         // uses kotlin property access syntax to replace setDefaultCommand().
@@ -184,18 +193,26 @@ class RobotContainer: ChargerRobotContainer() {
             }
         }
 
+    }
 
+    private fun configureBindings(){
+        DriverController
 
+        val resetAimToAngle = InstantCommand{DriverController.targetHeading = null}
 
-
-
-
-
-
-
-
-
-
+        DriverController.headingZeroButton.onTrue(InstantCommand(gyro::zeroHeading))
+        DriverController.pointNorthButton.onTrue(
+            InstantCommand{DriverController.targetHeading = 0.degrees}
+        ).onFalse(resetAimToAngle)
+        DriverController.pointEastButton.onTrue(
+            InstantCommand{DriverController.targetHeading = 90.degrees}
+        ).onFalse(resetAimToAngle)
+        DriverController.pointSouthButton.onTrue(
+            InstantCommand{DriverController.targetHeading = 180.degrees}
+        ).onFalse(resetAimToAngle)
+        DriverController.pointWestButton.onTrue(
+            InstantCommand{DriverController.targetHeading = 270.degrees}
+        ).onFalse(resetAimToAngle)
     }
 
 
@@ -203,9 +220,6 @@ class RobotContainer: ChargerRobotContainer() {
     override fun testInit(){
         ConsoleLogger.print()
     }
-
-
-
 
 
     override val autonomousCommand: Command

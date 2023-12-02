@@ -1,6 +1,7 @@
 package frc.robot.hardware.inputdevices
 
-import com.batterystaple.kmeasure.quantities.*
+import com.batterystaple.kmeasure.quantities.Angle
+import com.batterystaple.kmeasure.quantities.Scalar
 import com.batterystaple.kmeasure.units.degrees
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import frc.chargers.controls.pid.PIDConstants
