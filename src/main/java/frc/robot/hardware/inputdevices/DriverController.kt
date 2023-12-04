@@ -1,8 +1,8 @@
 package frc.robot.hardware.inputdevices
 
-import com.batterystaple.kmeasure.quantities.Angle
-import com.batterystaple.kmeasure.quantities.Scalar
+import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.degrees
+import com.batterystaple.kmeasure.units.seconds
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import frc.chargers.controls.pid.PIDConstants
 import frc.chargers.controls.pid.UnitSuperPIDController
@@ -23,25 +23,25 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
 
     // coefficients go from greatest power to smallest.
     private val driveMultiplierFunction = Polynomial(0.2,0.0,0.5,0.0).preserveSign()
-    private val rotationMultiplierFunction = Polynomial(-0.3,0.0,-0.3,0.0).preserveSign()
+    private val rotationMultiplierFunction = Polynomial(0.3,0.0,0.3,0.0).preserveSign()
 
-    private val forwardLimiter: ScalarRateLimiter? = null /*ScalarRateLimiter(
+    private val forwardLimiter: ScalarRateLimiter? = ScalarRateLimiter(
+        Scalar(0.7) / 1.seconds
+    )
+    private val strafeLimiter: ScalarRateLimiter? = ScalarRateLimiter(
+        Scalar(0.7) / 1.seconds,
+    )
+    private val rotationLimiter: ScalarRateLimiter? = ScalarRateLimiter(
         Scalar(0.6) / 1.seconds,
-        Scalar(-0.8) / 1.seconds,
-        Scalar(0.0) / 1.seconds
-    )*/
-    private val strafeLimiter: ScalarRateLimiter? = null /*ScalarRateLimiter(
-        Scalar(0.6) / 1.seconds,
-        Scalar(-0.8) / 1.seconds,
-        Scalar(0.0) / 1.seconds
-    )*/
-    private val rotationLimiter: ScalarRateLimiter? = null
+    )
 
     private val turboModeMultiplier = 1.0..2.0
     private val precisionModeDivider = 1.0..4.0
 
 
 
+    private var previousForward = 0.0
+    private var previousStrafe = 0.0
 
 
     /* Private implementation variables  */
@@ -53,6 +53,10 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
         target = 0.0.degrees,
         continuousInputRange = 0.0.degrees..360.degrees
     )
+
+    private fun Double.preserveSign(initialValue: Double): Double = if (
+        this > 0 && initialValue < 0 || this < 0 && initialValue > 0
+    ) -this else this
 
 
 
@@ -70,11 +74,13 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
         var strafe = driveMultiplierFunction( leftX.withScaledDeadband() )
         var rotation = rotationMultiplierFunction( rightX.withScaledDeadband() )
 
-        if (forwardLimiter != null) forward = forwardLimiter.calculate(forward)
+        if (forwardLimiter != null) forward = if (abs(forward-previousForward) > 0) forwardLimiter.calculate(forward) else forward
 
-        if (strafeLimiter != null) strafe = strafeLimiter.calculate(strafe)
+        if (strafeLimiter != null) strafe = if (abs(strafe-previousStrafe) > 0) strafeLimiter.calculate(strafe) else strafe
 
         if (rotationLimiter != null) rotation = rotationLimiter.calculate(rotation)
+        previousForward = forward
+        previousStrafe = strafe
 
 
         var turbo = abs(leftTriggerAxis).mapTriggerValue(turboModeMultiplier)

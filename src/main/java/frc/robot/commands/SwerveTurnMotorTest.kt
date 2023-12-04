@@ -14,10 +14,10 @@ class SwerveTurnMotorTest(
 
     override fun execute() {
         drivetrain.apply{
-            topLeft.io.setTurnVoltage(0.5.volts)
-            topRight.io.setTurnVoltage(-0.5.volts)
-            bottomLeft.io.setTurnVoltage(-0.5.volts)
-            bottomRight.io.setTurnVoltage(0.5.volts)
+            topLeft.io.turnVoltage = 0.5.volts
+            topRight.io.turnVoltage = -0.5.volts
+            bottomLeft.io.turnVoltage = -0.5.volts
+            bottomRight.io.turnVoltage = 0.5.volts
         }
     }
     override fun isFinished(): Boolean = false

@@ -4,9 +4,7 @@
 package frc.robot
 
 import com.batterystaple.kmeasure.units.degrees
-import com.batterystaple.kmeasure.units.inches
-import com.batterystaple.kmeasure.units.meters
-import edu.wpi.first.apriltag.AprilTagFields
+import com.batterystaple.kmeasure.units.radians
 import edu.wpi.first.hal.AllianceStationID
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.RobotBase
@@ -20,22 +18,11 @@ import frc.chargers.constants.tuning.DashboardTuner
 import frc.chargers.framework.ChargerRobotContainer
 import frc.chargers.framework.ConsoleLogger
 import frc.chargers.hardware.motorcontrol.rev.neoSparkMax
-import frc.chargers.hardware.sensors.cameras.vision.ApriltagCamSim
-import frc.chargers.hardware.sensors.cameras.vision.VisionPipeline
-import frc.chargers.hardware.sensors.cameras.vision.VisionResult
-import frc.chargers.hardware.sensors.cameras.vision.advantageKitApriltagPipeline
-import frc.chargers.hardware.sensors.cameras.vision.limelight.Limelight
 import frc.chargers.hardware.sensors.encoders.absolute.ChargerCANcoder
-import frc.chargers.hardware.sensors.imu.IMU
-import frc.chargers.hardware.sensors.imu.IMUSim
-import frc.chargers.hardware.sensors.imu.NavX
-import frc.chargers.hardware.sensors.imu.advantageKitIMU
+import frc.chargers.hardware.sensors.imu.*
 import frc.chargers.hardware.subsystems.drivetrain.EncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystemutils.swervedrive.sparkMaxSwerveMotors
 import frc.chargers.hardware.subsystemutils.swervedrive.swerveCANcoders
-import frc.chargers.wpilibextensions.geometry.rotation.Rotation3d
-import frc.chargers.wpilibextensions.geometry.threedimensional.UnitTransform3d
-import frc.chargers.wpilibextensions.geometry.threedimensional.UnitTranslation3d
 import frc.chargers.wpilibextensions.geometry.twodimensional.UnitPose2d
 import frc.robot.hardware.inputdevices.DriverController
 
@@ -48,12 +35,6 @@ import frc.robot.hardware.inputdevices.DriverController
 class RobotContainer: ChargerRobotContainer() {
 
     private object RealHardware{
-        val navX = NavX()
-
-        val limelight = Limelight(
-            lensHeight = 0.5.meters,
-            mountAngle = 30.degrees
-        )
 
         val swerveTurnMotors = sparkMaxSwerveMotors(
             topLeft = neoSparkMax(29), /*inverted = false*/
@@ -63,11 +44,16 @@ class RobotContainer: ChargerRobotContainer() {
         )
 
         val swerveDriveMotors = sparkMaxSwerveMotors(
-            topLeft = neoSparkMax(10){inverted = true},
-            topRight = neoSparkMax(16){inverted = false},
+            topLeft = neoSparkMax(10){inverted = false},
+            topRight = neoSparkMax(16){inverted = true},
             bottomLeft = neoSparkMax(30){inverted = false},
             bottomRight = neoSparkMax(3){inverted = false}
-        )
+        ).also{
+            println("topLeft inverted: " + it.topLeft.inverted)
+            println("topRight inverted: " + it.topRight.inverted)
+            println("bottomLeft inverted: " + it.bottomLeft.inverted)
+            println("bottomRight inverted: " + it.bottomRight.inverted)
+        }
 
         val swerveEncoders = swerveCANcoders(
             topLeft = ChargerCANcoder(44),
@@ -76,10 +62,10 @@ class RobotContainer: ChargerRobotContainer() {
             bottomRight = ChargerCANcoder(45),
             useAbsoluteSensor = true
         ).withOffsets(
-            topLeftZero = 39.11.degrees,
-            topRightZero = 107.92.degrees,
-            bottomLeftZero = 264.46.degrees,
-            bottomRightZero = 345.93.degrees
+            topLeftZero = 0.602.radians,
+            topRightZero = 1.81.radians,
+            bottomLeftZero = 1.48.radians,
+            bottomRightZero = 2.936.radians
         )
     }
 
@@ -90,13 +76,7 @@ class RobotContainer: ChargerRobotContainer() {
 
     the function "advantageKitIMU" creates a
      */
-    private val gyro: IMU = advantageKitIMU(
-        "IMU",
-        // implementation of the IMU interface on the real robot
-        realImpl = RealHardware.navX,
-        // implementation of the IMU interface on the sim robot.
-        simImpl = IMUSim()
-    )
+    private val gyro: IMU = if (RobotBase.isReal()) NavX() else IMUSim()
 
     // swerve drivetrain; implemented in chargerlib
     private val drivetrain = EncoderHolonomicDrivetrain(
@@ -112,52 +92,6 @@ class RobotContainer: ChargerRobotContainer() {
         IMUSim.setHeadingSource(it)
         IMUSim.setChassisSpeedsSource { it.currentSpeeds }
     }
-
-
-    /*
-    Creates an instance of the VisionPipeline<VisionResult.Apriltag> interface,
-    which is essentially a generic vision camera that can detect apriltags.
-
-    The "advantageKitApriltagPipeline" function creates an implementation of this interface
-    with advantagekit support: I.E logging & replay.
-     */
-    private val visionCamera: VisionPipeline<VisionResult.Apriltag> =
-        advantageKitApriltagPipeline(
-            "ApriltagVision",
-            // implementation of VisionPipeline<VisionResult.Apriltag> used on real robot
-            realImpl = RealHardware.limelight.ApriltagPipeline(id = 0),
-            // implementation of VisionPipeline<VisionResult.Apriltag> used in simulation
-            simImpl = ApriltagCamSim(
-                camName = "Sim Camera",
-                robotPoseSupplier = drivetrain.poseEstimator,
-                robotToCam = UnitTransform3d(
-                    UnitTranslation3d(
-                        0.0.inches,
-                        0.inches,
-                        0.5.meters
-                    ),
-                    Rotation3d(
-                        0.degrees,
-                        60.degrees,
-                        0.degrees
-                    )
-                ),
-                fov = 180.degrees,
-                ledRange = 20.meters,
-                minTargetArea = 10.0,
-                cameraResHeight = 640,
-                cameraResWidth = 480,
-                fieldMap = AprilTagFields.k2023ChargedUp.loadAprilTagLayoutField()
-            ).also{
-                if (RobotBase.isSimulation()){
-                    drivetrain.poseEstimator.addPoseSuppliers(it.PoseEstimator())
-                }
-            }
-        )
-
-
-
-
 
 
 

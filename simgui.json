@@ -62,6 +62,12 @@
           "BottomLeftSwerveModule": {
             "open": true
           },
+          "TopLeftSwerveModule": {
+            "open": true
+          },
+          "TopRightSwerveModule": {
+            "open": true
+          },
           "open": true
         },
         "Drivetrain(Swerve)": {
@@ -102,6 +108,18 @@
             "open": true
           },
           "open": true
+        },
+        "IMU": {
+          "accelerometer": {
+            "open": true
+          },
+          "compass": {
+            "open": true
+          },
+          "open": true,
+          "speedometer": {
+            "open": true
+          }
         },
         "RealMetadata": {
           "open": true

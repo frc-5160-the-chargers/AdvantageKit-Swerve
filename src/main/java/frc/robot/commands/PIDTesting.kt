@@ -23,7 +23,7 @@ class StockPIDcontrollerSwerveTest(
 
     override fun execute(){
         println(module.currentDirection.inUnit(degrees))
-        module.io.setTurnVoltage(pidController.calculate(module.currentDirection.siValue, 0.0).ofUnit(volts))
+        module.io.turnVoltage = pidController.calculate(module.currentDirection.siValue, 0.0).ofUnit(volts)
     }
 }
 
@@ -41,6 +41,6 @@ class ChargerPIDcontrollerSwerveTest(
 
     override fun execute(){
         println(module.currentDirection.inUnit(degrees))
-        module.io.setTurnVoltage(pidController.calculateOutput())
+        module.io.turnVoltage = pidController.calculateOutput()
     }
 }
