@@ -34,7 +34,7 @@ val DRIVE_REAL_CONTROL_SCHEME = SwerveControl.PIDFirstOrder(
     turnPIDConstants = PIDConstants(3.0,0.0,0.0),
     turnPrecision = Precision.Within(0.5.degrees),
     drivePIDConstants = PIDConstants(0.1,0.0,0.0),
-    driveFF = AngularMotorFF(0.11697.volts,0.133420,0.0, angleUnit = radians),
+    driveFF = AngularMotorFF(0.12117.volts,0.13210,0.0, angleUnit = radians),
 )
 
 

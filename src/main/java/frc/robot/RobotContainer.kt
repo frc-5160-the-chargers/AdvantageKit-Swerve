@@ -3,6 +3,10 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot
 
+import com.batterystaple.kmeasure.quantities.Acceleration
+import com.batterystaple.kmeasure.quantities.Angle
+import com.batterystaple.kmeasure.quantities.AngularVelocity
+import com.batterystaple.kmeasure.quantities.Velocity
 import com.batterystaple.kmeasure.units.degrees
 import com.batterystaple.kmeasure.units.radians
 import edu.wpi.first.hal.AllianceStationID
@@ -14,15 +18,20 @@ import edu.wpi.first.wpilibj2.command.InstantCommand
 import frc.chargers.commands.DoNothing
 import frc.chargers.commands.InstantCommand
 import frc.chargers.commands.buildCommand
+import frc.chargers.commands.characterizeDriveMotors
+import frc.chargers.commands.drivetrainCommands.followPath
 import frc.chargers.constants.tuning.DashboardTuner
+import frc.chargers.controls.pid.PIDConstants
 import frc.chargers.framework.ChargerRobotContainer
 import frc.chargers.framework.ConsoleLogger
 import frc.chargers.hardware.motorcontrol.rev.neoSparkMax
 import frc.chargers.hardware.sensors.encoders.absolute.ChargerCANcoder
 import frc.chargers.hardware.sensors.imu.*
+import frc.chargers.hardware.sensors.imu.gyroscopes.HeadingProvider
 import frc.chargers.hardware.subsystems.drivetrain.EncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystemutils.swervedrive.sparkMaxSwerveMotors
 import frc.chargers.hardware.subsystemutils.swervedrive.swerveCANcoders
+import frc.chargers.wpilibextensions.geometry.motion.LinearMotionConstraints
 import frc.chargers.wpilibextensions.geometry.twodimensional.UnitPose2d
 import frc.robot.hardware.inputdevices.DriverController
 
@@ -34,40 +43,7 @@ import frc.robot.hardware.inputdevices.DriverController
  */
 class RobotContainer: ChargerRobotContainer() {
 
-    private object RealHardware{
 
-        val swerveTurnMotors = sparkMaxSwerveMotors(
-            topLeft = neoSparkMax(29), /*inverted = false*/
-            topRight = neoSparkMax(31) /*{inverted = true}*/ ,
-            bottomLeft = neoSparkMax(22), /*inverted = false*/
-            bottomRight = neoSparkMax(4) /*inverted = false*/
-        )
-
-        val swerveDriveMotors = sparkMaxSwerveMotors(
-            topLeft = neoSparkMax(10){inverted = false},
-            topRight = neoSparkMax(16){inverted = true},
-            bottomLeft = neoSparkMax(30){inverted = false},
-            bottomRight = neoSparkMax(3){inverted = false}
-        ).also{
-            println("topLeft inverted: " + it.topLeft.inverted)
-            println("topRight inverted: " + it.topRight.inverted)
-            println("bottomLeft inverted: " + it.bottomLeft.inverted)
-            println("bottomRight inverted: " + it.bottomRight.inverted)
-        }
-
-        val swerveEncoders = swerveCANcoders(
-            topLeft = ChargerCANcoder(44),
-            topRight = ChargerCANcoder(42),
-            bottomLeft = ChargerCANcoder(43),
-            bottomRight = ChargerCANcoder(45),
-            useAbsoluteSensor = true
-        ).withOffsets(
-            topLeftZero = 0.602.radians,
-            topRightZero = 1.81.radians,
-            bottomLeftZero = 1.48.radians,
-            bottomRightZero = 2.936.radians
-        )
-    }
 
 
     /*
@@ -80,14 +56,40 @@ class RobotContainer: ChargerRobotContainer() {
 
     // swerve drivetrain; implemented in chargerlib
     private val drivetrain = EncoderHolonomicDrivetrain(
-        turnMotors = RealHardware.swerveTurnMotors,
-        turnEncoders = RealHardware.swerveEncoders,
-        driveMotors = RealHardware.swerveDriveMotors,
+        turnMotors = sparkMaxSwerveMotors(
+            topLeft = neoSparkMax(29), /*inverted = false*/
+            topRight = neoSparkMax(31) /*{inverted = true}*/ ,
+            bottomLeft = neoSparkMax(22), /*inverted = false*/
+            bottomRight = neoSparkMax(4) /*inverted = false*/
+        ),
+        turnEncoders = swerveCANcoders(
+            topLeft = ChargerCANcoder(44),
+            topRight = ChargerCANcoder(42),
+            bottomLeft = ChargerCANcoder(43),
+            bottomRight = ChargerCANcoder(45),
+            useAbsoluteSensor = true
+        ).withOffsets(
+            topLeftZero = 0.602.radians,
+            topRightZero = 1.81.radians,
+            bottomLeftZero = 1.48.radians,
+            bottomRightZero = 2.936.radians
+        ),
+        driveMotors = sparkMaxSwerveMotors(
+            topLeft = neoSparkMax(10){inverted = false},
+            topRight = neoSparkMax(16){inverted = true},
+            bottomLeft = neoSparkMax(30){inverted = false},
+            bottomRight = neoSparkMax(3){inverted = false}
+        ).also{
+            println("topLeft inverted: " + it.topLeft.inverted)
+            println("topRight inverted: " + it.topRight.inverted)
+            println("bottomLeft inverted: " + it.bottomLeft.inverted)
+            println("bottomRight inverted: " + it.bottomRight.inverted)
+        },
         turnGearbox = DCMotor.getNEO(1),
         driveGearbox = DCMotor.getNEO(1),
         controlScheme = if (RobotBase.isReal()) DRIVE_REAL_CONTROL_SCHEME else DRIVE_SIM_CONTROL_SCHEME,
         constants = DRIVE_CONSTANTS,
-        gyro = if(RobotBase.isReal()) gyro else null
+        gyro = if(RobotBase.isReal()) gyro else HeadingProvider{Angle(0.0)}
     ).also{
         IMUSim.setHeadingSource(it)
         IMUSim.setChassisSpeedsSource { it.currentSpeeds }
@@ -120,6 +122,7 @@ class RobotContainer: ChargerRobotContainer() {
 
             loopForever{
                 drivetrain.swerveDrive(DriverController.swerveOutput(gyro.heading), fieldRelative = true)
+                //drivetrain.velocityDrive(Velocity(1.0),Velocity(0.0), AngularVelocity(1.0))
             }
 
             onEnd{
@@ -157,5 +160,17 @@ class RobotContainer: ChargerRobotContainer() {
 
 
     override val autonomousCommand: Command
-        get() = DoNothing()
+        get() = buildCommand{
+            //+drivetrain.characterizeDriveMotors(forwards = false)
+
+            drivetrain.followPath(
+                trajectoryName = "minipath",
+                translationConstants = PIDConstants(0.2,0.0,0.0),
+                rotationConstants = PIDConstants(0.3,0.0,0.0),
+                pathConstraints = LinearMotionConstraints(Velocity(0.5), Acceleration(0.5)),
+                isFirstPath = true
+            )
+
+
+        }
 }
