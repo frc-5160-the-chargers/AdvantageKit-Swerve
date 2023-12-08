@@ -150,7 +150,13 @@
             "BottomLeftSwerveModule": {
               "open": true
             },
+            "BottomRightSwerveModule": {
+              "open": true
+            },
             "TopLeftSwerveModule": {
+              "open": true
+            },
+            "TopRightSwerveModule": {
               "open": true
             },
             "open": true

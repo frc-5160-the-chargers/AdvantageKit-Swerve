@@ -9,13 +9,13 @@
   "MainWindow": {
     "GLOBAL": {
       "fps": "120",
-      "height": "1050",
-      "maximized": "0",
+      "height": "974",
+      "maximized": "1",
       "style": "0",
       "userScale": "2",
       "width": "1920",
-      "xpos": "-32000",
-      "ypos": "-32000"
+      "xpos": "0",
+      "ypos": "34"
     }
   },
   "Table": {

@@ -13,6 +13,7 @@ import frc.chargers.wpilibextensions.kinematics.ChassisPowers
 import frc.chargers.wpilibextensions.ratelimit.ScalarRateLimiter
 import org.littletonrobotics.junction.Logger
 import kotlin.math.abs
+import kotlin.math.hypot
 
 
 object DriverController: ChargerController(port = 0, deadband = 0.1){
@@ -21,27 +22,22 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
     private const val AIM_TO_TARGET_ENABLED = true
     private val aimToTargetPIDConstants = PIDConstants(1.2,0.0,0.0)
 
-    // coefficients go from greatest power to smallest.
-    private val driveMultiplierFunction = Polynomial(0.2,0.0,0.5,0.0).preserveSign()
-    private val rotationMultiplierFunction = Polynomial(0.3,0.0,0.3,0.0).preserveSign()
+    // 0.2x^3 + 0.5x
+    private val driveMultiplierFunction = Polynomial(0.2,0.0,0.5,0.0)
+    // 0.2x^3 + 0.3x
+    private val rotationMultiplierFunction = Polynomial(0.2,0.0,0.3,0.0)
 
-    private val forwardLimiter: ScalarRateLimiter? = ScalarRateLimiter(
-        Scalar(0.7) / 1.seconds
-    )
-    private val strafeLimiter: ScalarRateLimiter? = ScalarRateLimiter(
-        Scalar(0.7) / 1.seconds,
-    )
-    private val rotationLimiter: ScalarRateLimiter? = ScalarRateLimiter(
-        Scalar(0.6) / 1.seconds,
-    )
+    private val translationLimiter: ScalarRateLimiter? = ScalarRateLimiter(Scalar(0.7) / 1.seconds)
+    private val rotationLimiter: ScalarRateLimiter? = null
 
     private val turboModeMultiplier = 1.0..2.0
     private val precisionModeDivider = 1.0..4.0
 
-
-
     private var previousForward = 0.0
     private var previousStrafe = 0.0
+
+
+
 
 
     /* Private implementation variables  */
@@ -54,9 +50,7 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
         continuousInputRange = 0.0.degrees..360.degrees
     )
 
-    private fun Double.preserveSign(initialValue: Double): Double = if (
-        this > 0 && initialValue < 0 || this < 0 && initialValue > 0
-    ) -this else this
+
 
 
 
@@ -74,26 +68,22 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
         var strafe = driveMultiplierFunction( leftX.withScaledDeadband() )
         var rotation = rotationMultiplierFunction( rightX.withScaledDeadband() )
 
-        if (forwardLimiter != null) forward = if (abs(forward-previousForward) > 0) forwardLimiter.calculate(forward) else forward
+        val magnitude = hypot(forward,strafe)
+        val limitedMagnitude = translationLimiter?.calculate(magnitude) ?: magnitude
 
-        if (strafeLimiter != null) strafe = if (abs(strafe-previousStrafe) > 0) strafeLimiter.calculate(strafe) else strafe
-
+        if (abs(forward) - abs(previousForward) > 0) forward *= limitedMagnitude / magnitude
+        if (abs(strafe) - abs(previousStrafe) > 0) strafe *= limitedMagnitude / magnitude
         if (rotationLimiter != null) rotation = rotationLimiter.calculate(rotation)
+
         previousForward = forward
         previousStrafe = strafe
-
 
         var turbo = abs(leftTriggerAxis).mapTriggerValue(turboModeMultiplier)
         var precision = 1 / abs(rightTriggerAxis).mapTriggerValue(precisionModeDivider)
 
-        if (turbo < 1.0 || precision.isInfinite() || precision.isNaN()){
-            turbo = 1.0
-        }
-        if (precision.isInfinite() || precision.isNaN() || precision > 1.0 || precision == 0.0){
-            precision = 1.0
-        }
+        if (turbo < 1.0 || precision.isInfinite() || precision.isNaN()) turbo = 1.0
+        if (precision.isInfinite() || precision.isNaN() || precision > 1.0 || precision == 0.0) precision = 1.0
 
-        
         if (AIM_TO_TARGET_ENABLED){
             if (robotHeading != null){
                 currentHeading = robotHeading

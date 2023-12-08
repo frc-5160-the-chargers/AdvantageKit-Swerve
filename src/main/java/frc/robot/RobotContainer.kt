@@ -5,7 +5,6 @@ package frc.robot
 
 import com.batterystaple.kmeasure.quantities.Acceleration
 import com.batterystaple.kmeasure.quantities.Angle
-import com.batterystaple.kmeasure.quantities.AngularVelocity
 import com.batterystaple.kmeasure.quantities.Velocity
 import com.batterystaple.kmeasure.units.degrees
 import com.batterystaple.kmeasure.units.radians
@@ -15,10 +14,8 @@ import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.simulation.DriverStationSim
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.InstantCommand
-import frc.chargers.commands.DoNothing
 import frc.chargers.commands.InstantCommand
 import frc.chargers.commands.buildCommand
-import frc.chargers.commands.characterizeDriveMotors
 import frc.chargers.commands.drivetrainCommands.followPath
 import frc.chargers.constants.tuning.DashboardTuner
 import frc.chargers.controls.pid.PIDConstants
@@ -27,7 +24,6 @@ import frc.chargers.framework.ConsoleLogger
 import frc.chargers.hardware.motorcontrol.rev.neoSparkMax
 import frc.chargers.hardware.sensors.encoders.absolute.ChargerCANcoder
 import frc.chargers.hardware.sensors.imu.*
-import frc.chargers.hardware.sensors.imu.gyroscopes.HeadingProvider
 import frc.chargers.hardware.subsystems.drivetrain.EncoderHolonomicDrivetrain
 import frc.chargers.hardware.subsystemutils.swervedrive.sparkMaxSwerveMotors
 import frc.chargers.hardware.subsystemutils.swervedrive.swerveCANcoders
@@ -49,8 +45,6 @@ class RobotContainer: ChargerRobotContainer() {
     /*
     the IMU type is an interface: designed to hold all the data from an IMU,
     such as altitude, heading, roll, pitch, yaw, etc.
-
-    the function "advantageKitIMU" creates a
      */
     private val gyro: IMU = if (RobotBase.isReal()) NavX() else IMUSim()
 
@@ -89,20 +83,18 @@ class RobotContainer: ChargerRobotContainer() {
         driveGearbox = DCMotor.getNEO(1),
         controlScheme = if (RobotBase.isReal()) DRIVE_REAL_CONTROL_SCHEME else DRIVE_SIM_CONTROL_SCHEME,
         constants = DRIVE_CONSTANTS,
-        gyro = if(RobotBase.isReal()) gyro else HeadingProvider{Angle(0.0)}
-    ).also{
-        IMUSim.setHeadingSource(it)
-        IMUSim.setChassisSpeedsSource { it.currentSpeeds }
-    }
+        gyro = if(RobotBase.isReal()) gyro else null
+    )
 
 
 
     /** The container for the robot. Contains subsystems, OI devices, and commands.  */
     init {
+        IMUSim.setHeadingSource(drivetrain)
+        IMUSim.setChassisSpeedsSource { drivetrain.currentSpeeds }
 
+        DriverController
         configureBindings()
-
-
 
         DriverStationSim.setAllianceStationId(AllianceStationID.Blue1)
         println("tuning mode: " + DashboardTuner.tuningMode)
@@ -122,7 +114,6 @@ class RobotContainer: ChargerRobotContainer() {
 
             loopForever{
                 drivetrain.swerveDrive(DriverController.swerveOutput(gyro.heading), fieldRelative = true)
-                //drivetrain.velocityDrive(Velocity(1.0),Velocity(0.0), AngularVelocity(1.0))
             }
 
             onEnd{
@@ -133,23 +124,18 @@ class RobotContainer: ChargerRobotContainer() {
     }
 
     private fun configureBindings(){
-        DriverController
-
         val resetAimToAngle = InstantCommand{DriverController.targetHeading = null}
+        fun targetAngle(heading: Angle) = InstantCommand{DriverController.targetHeading = heading}
 
-        DriverController.headingZeroButton.onTrue(InstantCommand(gyro::zeroHeading))
-        DriverController.pointNorthButton.onTrue(
-            InstantCommand{DriverController.targetHeading = 0.degrees}
-        ).onFalse(resetAimToAngle)
-        DriverController.pointEastButton.onTrue(
-            InstantCommand{DriverController.targetHeading = 90.degrees}
-        ).onFalse(resetAimToAngle)
-        DriverController.pointSouthButton.onTrue(
-            InstantCommand{DriverController.targetHeading = 180.degrees}
-        ).onFalse(resetAimToAngle)
-        DriverController.pointWestButton.onTrue(
-            InstantCommand{DriverController.targetHeading = 270.degrees}
-        ).onFalse(resetAimToAngle)
+        if (RobotBase.isReal()) DriverController.headingZeroButton.onTrue(InstantCommand(gyro::zeroHeading))
+
+        DriverController.pointNorthButton.onTrue(targetAngle(0.degrees)).onFalse(resetAimToAngle)
+
+        DriverController.pointEastButton.onTrue(targetAngle(90.degrees)).onFalse(resetAimToAngle)
+
+        DriverController.pointSouthButton.onTrue(targetAngle(180.degrees)).onFalse(resetAimToAngle)
+
+        DriverController.pointWestButton.onTrue(targetAngle(270.degrees)).onFalse(resetAimToAngle)
     }
 
 
@@ -161,16 +147,14 @@ class RobotContainer: ChargerRobotContainer() {
 
     override val autonomousCommand: Command
         get() = buildCommand{
-            //+drivetrain.characterizeDriveMotors(forwards = false)
 
             drivetrain.followPath(
-                trajectoryName = "minipath",
+                trajectoryName = "path_test",
                 translationConstants = PIDConstants(0.2,0.0,0.0),
-                rotationConstants = PIDConstants(0.3,0.0,0.0),
-                pathConstraints = LinearMotionConstraints(Velocity(0.5), Acceleration(0.5)),
+                rotationConstants = PIDConstants(0.7,0.0,0.0),
+                pathConstraints = LinearMotionConstraints(Velocity(3.5), Acceleration(3.0)),
                 isFirstPath = true
             )
-
 
         }
 }
