@@ -5,7 +5,6 @@ package frc.robot
 
 import com.batterystaple.kmeasure.quantities.div
 import com.batterystaple.kmeasure.units.*
-import edu.wpi.first.wpilibj.RobotBase
 import frc.chargers.constants.drivetrain.SwerveConstants
 import frc.chargers.controls.feedforward.AngularMotorFF
 import frc.chargers.controls.pid.PIDConstants
@@ -13,8 +12,8 @@ import frc.chargers.hardware.subsystemutils.swervedrive.SwerveControl
 import frc.chargers.utils.Precision
 
 
-val RESET_POSE_ON_STARTUP = RobotBase.isSimulation()
 
+const val AIM_TO_TARGET_ENABLED = true
 
 val DRIVE_CONSTANTS = SwerveConstants.mk4iL2(
     maxModuleSpeed = 4.55.meters / 1.seconds,
@@ -32,7 +31,7 @@ val DRIVE_SIM_CONTROL_SCHEME = SwerveControl.PIDFirstOrder(
 
 val DRIVE_REAL_CONTROL_SCHEME = SwerveControl.PIDFirstOrder(
     turnPIDConstants = PIDConstants(3.0,0.0,0.0),
-    turnPrecision = Precision.Within(0.5.degrees),
+    turnPrecision = Precision.Within(0.2.degrees),
     drivePIDConstants = PIDConstants(0.1,0.0,0.0),
     driveFF = AngularMotorFF(0.12117.volts,0.13210,0.0, angleUnit = radians),
 )

@@ -10,7 +10,8 @@ import com.batterystaple.kmeasure.units.degrees
 import com.batterystaple.kmeasure.units.radians
 import edu.wpi.first.hal.AllianceStationID
 import edu.wpi.first.math.system.plant.DCMotor
-import edu.wpi.first.wpilibj.RobotBase
+import edu.wpi.first.wpilibj.RobotBase.isReal
+import edu.wpi.first.wpilibj.RobotBase.isSimulation
 import edu.wpi.first.wpilibj.simulation.DriverStationSim
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.InstantCommand
@@ -40,21 +41,21 @@ import frc.robot.hardware.inputdevices.DriverController
 class RobotContainer: ChargerRobotContainer() {
 
 
-
-
     /*
     the IMU type is an interface: designed to hold all the data from an IMU,
     such as altitude, heading, roll, pitch, yaw, etc.
+
+    Both the NavX and IMUSim classes have advantagekit logging capabilies.
      */
-    private val gyro: IMU = if (RobotBase.isReal()) NavX() else IMUSim()
+    private val gyro: IMU = if (isReal()) NavX() else IMUSim()
 
     // swerve drivetrain; implemented in chargerlib
     private val drivetrain = EncoderHolonomicDrivetrain(
         turnMotors = sparkMaxSwerveMotors(
-            topLeft = neoSparkMax(29), /*inverted = false*/
-            topRight = neoSparkMax(31) /*{inverted = true}*/ ,
-            bottomLeft = neoSparkMax(22), /*inverted = false*/
-            bottomRight = neoSparkMax(4) /*inverted = false*/
+            topLeft = neoSparkMax(29),
+            topRight = neoSparkMax(31),
+            bottomLeft = neoSparkMax(22),
+            bottomRight = neoSparkMax(4)
         ),
         turnEncoders = swerveCANcoders(
             topLeft = ChargerCANcoder(44),
@@ -81,9 +82,9 @@ class RobotContainer: ChargerRobotContainer() {
         },
         turnGearbox = DCMotor.getNEO(1),
         driveGearbox = DCMotor.getNEO(1),
-        controlScheme = if (RobotBase.isReal()) DRIVE_REAL_CONTROL_SCHEME else DRIVE_SIM_CONTROL_SCHEME,
+        controlScheme = if (isReal()) DRIVE_REAL_CONTROL_SCHEME else DRIVE_SIM_CONTROL_SCHEME,
         constants = DRIVE_CONSTANTS,
-        gyro = if(RobotBase.isReal()) gyro else null
+        gyro = if(isReal()) gyro else null
     )
 
 
@@ -109,7 +110,7 @@ class RobotContainer: ChargerRobotContainer() {
             addRequirements(drivetrain)
 
             runOnce{
-                if (RESET_POSE_ON_STARTUP) drivetrain.poseEstimator.resetPose(UnitPose2d())
+                if (isSimulation()) drivetrain.poseEstimator.resetPose(UnitPose2d())
             }
 
             loopForever{
@@ -127,7 +128,7 @@ class RobotContainer: ChargerRobotContainer() {
         val resetAimToAngle = InstantCommand{DriverController.targetHeading = null}
         fun targetAngle(heading: Angle) = InstantCommand{DriverController.targetHeading = heading}
 
-        if (RobotBase.isReal()) DriverController.headingZeroButton.onTrue(InstantCommand(gyro::zeroHeading))
+        if (isReal()) DriverController.headingZeroButton.onTrue(InstantCommand(gyro::zeroHeading))
 
         DriverController.pointNorthButton.onTrue(targetAngle(0.degrees)).onFalse(resetAimToAngle)
 

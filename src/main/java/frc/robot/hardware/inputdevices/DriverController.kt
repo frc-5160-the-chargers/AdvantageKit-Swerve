@@ -11,6 +11,7 @@ import frc.chargers.utils.math.equations.Polynomial
 import frc.chargers.utils.math.inputModulus
 import frc.chargers.wpilibextensions.kinematics.ChassisPowers
 import frc.chargers.wpilibextensions.ratelimit.ScalarRateLimiter
+import frc.robot.AIM_TO_TARGET_ENABLED
 import org.littletonrobotics.junction.Logger
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -19,22 +20,18 @@ import kotlin.math.hypot
 object DriverController: ChargerController(port = 0, deadband = 0.1){
 
     /* Top-Level constants */
-    private const val AIM_TO_TARGET_ENABLED = true
-    private val aimToTargetPIDConstants = PIDConstants(1.2,0.0,0.0)
+    private val aimToTargetPIDConstants = PIDConstants(0.8,0.0,0.0)
 
     // 0.2x^3 + 0.5x
     private val driveMultiplierFunction = Polynomial(0.2,0.0,0.5,0.0)
-    // 0.2x^3 + 0.3x
-    private val rotationMultiplierFunction = Polynomial(0.2,0.0,0.3,0.0)
+    // 0.3x^3 + 0.3x
+    private val rotationMultiplierFunction = Polynomial(0.3,0.0,0.3,0.0)
 
-    private val translationLimiter: ScalarRateLimiter? = ScalarRateLimiter(Scalar(0.7) / 1.seconds)
-    private val rotationLimiter: ScalarRateLimiter? = null
+    private val translationLimiter: ScalarRateLimiter? = ScalarRateLimiter(Scalar(0.6) / 1.seconds)
+    private val rotationLimiter: ScalarRateLimiter? = ScalarRateLimiter(Scalar(0.5) / 1.seconds)
 
     private val turboModeMultiplier = 1.0..2.0
     private val precisionModeDivider = 1.0..4.0
-
-    private var previousForward = 0.0
-    private var previousStrafe = 0.0
 
 
 
@@ -49,6 +46,9 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
         target = 0.0.degrees,
         continuousInputRange = 0.0.degrees..360.degrees
     )
+    private var previousForward = 0.0
+    private var previousStrafe = 0.0
+    private var previousRotation = 0.0
 
 
 
@@ -71,12 +71,17 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
         val magnitude = hypot(forward,strafe)
         val limitedMagnitude = translationLimiter?.calculate(magnitude) ?: magnitude
 
-        if (abs(forward) - abs(previousForward) > 0) forward *= limitedMagnitude / magnitude
-        if (abs(strafe) - abs(previousStrafe) > 0) strafe *= limitedMagnitude / magnitude
-        if (rotationLimiter != null) rotation = rotationLimiter.calculate(rotation)
+        if (abs(forward) > abs(previousForward)) forward *= limitedMagnitude / magnitude
+        if (abs(strafe) > abs(previousStrafe)) strafe *= limitedMagnitude / magnitude
+        if (rotationLimiter != null && abs(rotation) > abs(previousRotation)) {
+            rotation = rotationLimiter.calculate(rotation)
+        }else{
+            rotationLimiter?.reset(rotation)
+        }
 
         previousForward = forward
         previousStrafe = strafe
+        previousRotation = rotation
 
         var turbo = abs(leftTriggerAxis).mapTriggerValue(turboModeMultiplier)
         var precision = 1 / abs(rightTriggerAxis).mapTriggerValue(precisionModeDivider)
