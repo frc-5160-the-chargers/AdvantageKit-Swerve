@@ -2,16 +2,19 @@ package frc.robot.hardware.inputdevices
 
 import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.degrees
+import com.batterystaple.kmeasure.units.radians
 import com.batterystaple.kmeasure.units.seconds
+import edu.wpi.first.wpilibj.RobotBase.isReal
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import frc.chargers.controls.pid.PIDConstants
 import frc.chargers.controls.pid.UnitSuperPIDController
+import frc.chargers.framework.ChargerRobot
 import frc.chargers.hardware.inputdevices.ChargerController
 import frc.chargers.utils.math.equations.Polynomial
 import frc.chargers.utils.math.inputModulus
 import frc.chargers.wpilibextensions.kinematics.ChassisPowers
 import frc.chargers.wpilibextensions.ratelimit.ScalarRateLimiter
-import frc.robot.AIM_TO_TARGET_ENABLED
+import frc.robot.constants.AIM_TO_TARGET_ENABLED
 import org.littletonrobotics.junction.Logger
 import kotlin.math.abs
 import kotlin.math.hypot
@@ -20,7 +23,7 @@ import kotlin.math.hypot
 object DriverController: ChargerController(port = 0, deadband = 0.1){
 
     /* Top-Level constants */
-    private val aimToTargetPIDConstants = PIDConstants(0.8,0.0,0.0)
+    private val aimToTargetPIDConstants = if (isReal()) PIDConstants(0.02,0.0,0.0) else PIDConstants(0.8,0.0,0.0)
 
     // 0.2x^3 + 0.5x
     private val driveMultiplierFunction = Polynomial(0.2,0.0,0.5,0.0)
@@ -50,6 +53,12 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
     private var previousStrafe = 0.0
     private var previousRotation = 0.0
 
+    init{
+        ChargerRobot.runPeriodically{
+            Logger.getInstance().recordOutput("Drivetrain(Swerve)/wrappedHeading",currentHeading.inputModulus(0.0.degrees..360.degrees).inUnit(radians))
+        }
+    }
+
 
 
 
@@ -62,6 +71,7 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
     val pointEastButton: Trigger = x()
     val pointWestButton: Trigger = b()
     val headingZeroButton: Trigger = back()
+    val poseZeroButton: Trigger = start()
 
     fun swerveOutput(robotHeading: Angle? = null): ChassisPowers{
         var forward = driveMultiplierFunction( leftY.withScaledDeadband() )

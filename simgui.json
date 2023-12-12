@@ -94,8 +94,7 @@
           },
           "TopRightSwerveModule": {
             "open": true
-          },
-          "open": true
+          }
         },
         "Generic IMU": {
           "Accelerometer": {
@@ -120,9 +119,6 @@
           "speedometer": {
             "open": true
           }
-        },
-        "RealMetadata": {
-          "open": true
         },
         "RealOutputs": {
           "ActiveCommands": {
@@ -167,6 +163,18 @@
           "LoggedRobot": {
             "open": true
           },
+          "PPTrajectory": {
+            "Follower": {
+              "chassisSpeedsSetpoint": {
+                "open": true,
+                "translationError": {
+                  "open": true
+                }
+              },
+              "open": true
+            },
+            "open": true
+          },
           "TestOutputs": {
             "open": true
           },
@@ -192,7 +200,28 @@
         },
         "open": true
       },
+      "FMSInfo": {
+        "open": true
+      },
+      "LiveWindow": {
+        ".status": {
+          "open": true
+        },
+        "open": true
+      },
+      "Shuffleboard": {
+        ".metadata": {
+          "open": true
+        },
+        ".recording": {
+          "open": true
+        },
+        "open": true
+      },
       "SmartDashboard": {
+        "Alerts": {
+          "open": true
+        },
         "Field": {
           "open": true
         },
@@ -207,9 +236,14 @@
               },
               "open": true
             },
+            "BottomRightSwerveModule": {
+              "open": true
+            },
             "open": true
-          }
-        }
+          },
+          "open": true
+        },
+        "open": true
       },
       "photonvision": {
         "Sim Camera": {
