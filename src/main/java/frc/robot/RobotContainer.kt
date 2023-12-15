@@ -3,11 +3,11 @@
 // the WPILib BSD license file in the root directory of this project.
 package frc.robot
 
-import com.batterystaple.kmeasure.quantities.Acceleration
-import com.batterystaple.kmeasure.quantities.Angle
-import com.batterystaple.kmeasure.quantities.Velocity
+import com.batterystaple.kmeasure.quantities.*
+import com.batterystaple.kmeasure.units.amps
 import com.batterystaple.kmeasure.units.degrees
 import com.batterystaple.kmeasure.units.radians
+import com.batterystaple.kmeasure.units.volts
 import com.pathplanner.lib.commands.PPSwerveControllerCommand
 import edu.wpi.first.hal.AllianceStationID
 import edu.wpi.first.math.system.plant.DCMotor
@@ -24,6 +24,7 @@ import frc.chargers.constants.tuning.DashboardTuner
 import frc.chargers.controls.pid.PIDConstants
 import frc.chargers.framework.ChargerRobotContainer
 import frc.chargers.framework.ConsoleLogger
+import frc.chargers.hardware.motorcontrol.rev.SmartCurrentLimit
 import frc.chargers.hardware.motorcontrol.rev.neoSparkMax
 import frc.chargers.hardware.sensors.encoders.absolute.ChargerCANcoder
 import frc.chargers.hardware.sensors.imu.*
@@ -61,7 +62,10 @@ class RobotContainer: ChargerRobotContainer() {
             topRight = neoSparkMax(31),
             bottomLeft = neoSparkMax(22),
             bottomRight = neoSparkMax(4)
-        ),
+        ){
+            smartCurrentLimit = SmartCurrentLimit(30.amps)
+            voltageCompensationNominalVoltage = 12.volts
+        },
         turnEncoders = swerveCANcoders(
             topLeft = ChargerCANcoder(44),
             topRight = ChargerCANcoder(42),
@@ -75,15 +79,13 @@ class RobotContainer: ChargerRobotContainer() {
             bottomRightZero = 2.936.radians
         ),
         driveMotors = sparkMaxSwerveMotors(
-            topLeft = neoSparkMax(10){inverted = false},
+            topLeft = neoSparkMax(10){ inverted = false },
             topRight = neoSparkMax(16){inverted = true},
             bottomLeft = neoSparkMax(30){inverted = false},
             bottomRight = neoSparkMax(3){inverted = false}
-        ).also{
-            println("topLeft inverted: " + it.topLeft.inverted)
-            println("topRight inverted: " + it.topRight.inverted)
-            println("bottomLeft inverted: " + it.bottomLeft.inverted)
-            println("bottomRight inverted: " + it.bottomRight.inverted)
+        ){
+            smartCurrentLimit = SmartCurrentLimit(40.amps)
+            voltageCompensationNominalVoltage = 12.volts
         },
         turnGearbox = DCMotor.getNEO(1),
         driveGearbox = DCMotor.getNEO(1),
@@ -143,7 +145,7 @@ class RobotContainer: ChargerRobotContainer() {
             addRequirements(drivetrain)
 
             loopForever{
-                drivetrain.swerveDrive(DriverController.swerveOutput(gyroIO.heading), fieldRelative = true)
+                drivetrain.swerveDrive(DriverController.swerveOutput(gyroIO.heading))
             }
 
             onEnd{
@@ -160,6 +162,7 @@ class RobotContainer: ChargerRobotContainer() {
 
         DriverController.apply{
             if (isReal()) {
+
                 headingZeroButton.onTrue(InstantCommand(gyroIO::zeroHeading))
                 poseZeroButton.onTrue(
                     InstantCommand{
@@ -187,13 +190,9 @@ class RobotContainer: ChargerRobotContainer() {
     override val autonomousCommand: Command
         get() = buildCommand{
 
-            drivetrain.followPath(
-                trajectoryName = "minipath",
-                translationConstants = PIDConstants(0.2,0.0,0.0),
-                rotationConstants = PIDConstants(0.7,0.0,0.0),
-                pathConstraints = LinearMotionConstraints(Velocity(0.5), Acceleration(0.5)),
-                isFirstPath = true
-            )
+            loopForever(drivetrain){
+                drivetrain.velocityDrive(Velocity(0.5),Velocity(0.0), AngularVelocity(0.0))
+            }
 
         }
 }

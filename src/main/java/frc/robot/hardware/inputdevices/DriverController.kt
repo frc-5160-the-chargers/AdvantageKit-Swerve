@@ -2,13 +2,11 @@ package frc.robot.hardware.inputdevices
 
 import com.batterystaple.kmeasure.quantities.*
 import com.batterystaple.kmeasure.units.degrees
-import com.batterystaple.kmeasure.units.radians
 import com.batterystaple.kmeasure.units.seconds
 import edu.wpi.first.wpilibj.RobotBase.isReal
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import frc.chargers.controls.pid.PIDConstants
 import frc.chargers.controls.pid.UnitSuperPIDController
-import frc.chargers.framework.ChargerRobot
 import frc.chargers.hardware.inputdevices.ChargerController
 import frc.chargers.utils.math.equations.Polynomial
 import frc.chargers.utils.math.inputModulus
@@ -23,15 +21,15 @@ import kotlin.math.hypot
 object DriverController: ChargerController(port = 0, deadband = 0.1){
 
     /* Top-Level constants */
-    private val aimToTargetPIDConstants = if (isReal()) PIDConstants(0.02,0.0,0.0) else PIDConstants(0.8,0.0,0.0)
+    private val aimToTargetPIDConstants = if (isReal()) PIDConstants(-0.2,0.0,0.0) else PIDConstants(0.8,0.0,0.0)
 
     // 0.2x^3 + 0.5x
     private val driveMultiplierFunction = Polynomial(0.2,0.0,0.5,0.0)
     // 0.3x^3 + 0.3x
     private val rotationMultiplierFunction = Polynomial(0.3,0.0,0.3,0.0)
 
-    private val translationLimiter: ScalarRateLimiter? = ScalarRateLimiter(Scalar(0.6) / 1.seconds)
-    private val rotationLimiter: ScalarRateLimiter? = ScalarRateLimiter(Scalar(0.5) / 1.seconds)
+    private val translationLimiter: ScalarRateLimiter? = ScalarRateLimiter(Scalar(0.7) / 1.seconds)
+    private val rotationLimiter: ScalarRateLimiter? = null
 
     private val turboModeMultiplier = 1.0..2.0
     private val precisionModeDivider = 1.0..4.0
@@ -53,11 +51,6 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
     private var previousStrafe = 0.0
     private var previousRotation = 0.0
 
-    init{
-        ChargerRobot.runPeriodically{
-            Logger.getInstance().recordOutput("Drivetrain(Swerve)/wrappedHeading",currentHeading.inputModulus(0.0.degrees..360.degrees).inUnit(radians))
-        }
-    }
 
 
 
@@ -78,21 +71,6 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
         var strafe = driveMultiplierFunction( leftX.withScaledDeadband() )
         var rotation = rotationMultiplierFunction( rightX.withScaledDeadband() )
 
-        val magnitude = hypot(forward,strafe)
-        val limitedMagnitude = translationLimiter?.calculate(magnitude) ?: magnitude
-
-        if (abs(forward) > abs(previousForward)) forward *= limitedMagnitude / magnitude
-        if (abs(strafe) > abs(previousStrafe)) strafe *= limitedMagnitude / magnitude
-        if (rotationLimiter != null && abs(rotation) > abs(previousRotation)) {
-            rotation = rotationLimiter.calculate(rotation)
-        }else{
-            rotationLimiter?.reset(rotation)
-        }
-
-        previousForward = forward
-        previousStrafe = strafe
-        previousRotation = rotation
-
         var turbo = abs(leftTriggerAxis).mapTriggerValue(turboModeMultiplier)
         var precision = 1 / abs(rightTriggerAxis).mapTriggerValue(precisionModeDivider)
 
@@ -109,6 +87,23 @@ object DriverController: ChargerController(port = 0, deadband = 0.1){
                 rotation = aimToAngleController.calculateOutput().siValue
             }
         }
+
+
+
+        val magnitude = hypot(forward,strafe)
+        val limitedMagnitude = translationLimiter?.calculate(magnitude) ?: magnitude
+
+        if (abs(forward) > abs(previousForward)) forward *= limitedMagnitude / magnitude
+        if (abs(strafe) > abs(previousStrafe)) strafe *= limitedMagnitude / magnitude
+        if (rotationLimiter != null && abs(rotation) > abs(previousRotation)) {
+            rotation = rotationLimiter.calculate(rotation)
+        }else{
+            rotationLimiter?.reset(rotation)
+        }
+
+        previousForward = forward
+        previousStrafe = strafe
+        previousRotation = rotation
 
         Logger.getInstance().apply{
             recordOutput("Drivetrain(Swerve)/rotation output", rotation)
